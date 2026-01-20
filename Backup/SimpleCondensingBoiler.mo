@@ -1,0 +1,268 @@
+within CoSES_Thermal_ProHMo_PHiL.Backup;
+model SimpleCondensingBoiler
+  "Simplified Condensing Boiler model for Dymola - based on SimulationX physics"
+
+  // ============================================================================
+  // DESCRIPTION
+  // ============================================================================
+  // This is a simplified condensing boiler model that:
+  // - Produces heat only (no electricity)
+  // - Has modulating power output (20-100%)
+  // - Higher efficiency at lower return temperatures (condensing effect)
+  // - Includes thermal mass dynamics
+  //
+  // Based on SimulationX GreenCity CondensingBoiler model physics
+  // ============================================================================
+
+  // ============================================================================
+  // PARAMETERS - Boiler Specifications
+  // ============================================================================
+
+  parameter Modelica.Units.SI.Power QHeat_nominal = 50000
+    "Nominal thermal power output [W] (e.g., 50 kW)"
+    annotation(Dialog(group="Power Rating"));
+
+  parameter Real eta_nominal = 0.98
+    "Nominal efficiency at low return temp [-] (condensing: 0.95-1.09)"
+    annotation(Dialog(group="Efficiency"));
+
+  parameter Real eta_noncondensing = 0.88
+    "Efficiency at high return temp (non-condensing) [-]"
+    annotation(Dialog(group="Efficiency"));
+
+  parameter Modelica.Units.SI.Temperature T_condensing = 328.15
+    "Return temp below which condensing occurs [K] (55°C)"
+    annotation(Dialog(group="Efficiency"));
+
+  parameter Real ModulationMin = 0.20
+    "Minimum modulation (20% = cannot go below 20% power)"
+    annotation(Dialog(group="Control"));
+
+  parameter Modelica.Units.SI.Temperature TFlow_max = 358.15
+    "Maximum flow temperature [K] (85°C)"
+    annotation(Dialog(group="Temperature Limits"));
+
+  parameter Modelica.Units.SI.Volume V_boiler = 0.010
+    "Water volume in boiler [m³] (10 liters typical)"
+    annotation(Dialog(group="Thermal Mass"));
+
+  parameter Real QlossRate(unit="W/K") = 50
+    "Standby heat loss coefficient [W/K]"
+    annotation(Dialog(group="Losses"));
+
+  parameter Modelica.Units.SI.Temperature TAmbient = 293.15
+    "Ambient temperature around boiler [K] (20°C)"
+    annotation(Dialog(group="Losses"));
+
+  parameter Modelica.Units.SI.Time tau = 30
+    "Thermal time constant [s]"
+    annotation(Dialog(group="Dynamics"));
+
+  // Medium properties (water)
+  parameter Modelica.Units.SI.SpecificHeatCapacity cp = 4180
+    "Specific heat capacity of water [J/(kg·K)]";
+  parameter Modelica.Units.SI.Density rho = 1000
+    "Density of water [kg/m³]";
+
+  // ============================================================================
+  // INPUTS
+  // ============================================================================
+
+  Modelica.Blocks.Interfaces.BooleanInput CBon
+    "Boiler on/off command"
+    annotation(Placement(transformation(extent={{-140,60},{-100,100}}),
+        iconTransformation(extent={{-140,60},{-100,100}})));
+
+  Modelica.Blocks.Interfaces.RealInput Modulation(min=0, max=1)
+    "Power modulation signal [0-1] (0=min power, 1=max power)"
+    annotation(Placement(transformation(extent={{-140,10},{-100,50}}),
+        iconTransformation(extent={{-140,10},{-100,50}})));
+
+  Modelica.Blocks.Interfaces.RealInput TReturn_degC
+    "Return water temperature [°C]"
+    annotation(Placement(transformation(extent={{-140,-50},{-100,-10}}),
+        iconTransformation(extent={{-140,-50},{-100,-10}})));
+
+  Modelica.Blocks.Interfaces.RealInput qv_l_per_min
+    "Volume flow rate [L/min]"
+    annotation(Placement(transformation(extent={{-140,-100},{-100,-60}}),
+        iconTransformation(extent={{-140,-100},{-100,-60}})));
+
+  // ============================================================================
+  // OUTPUTS
+  // ============================================================================
+
+  Modelica.Blocks.Interfaces.RealOutput TSupply_degC
+    "Supply water temperature [°C]"
+    annotation(Placement(transformation(extent={{100,60},{120,80}}),
+        iconTransformation(extent={{100,60},{120,80}})));
+
+  Modelica.Blocks.Interfaces.RealOutput QHeat_kW
+    "Actual thermal power output [kW]"
+    annotation(Placement(transformation(extent={{100,20},{120,40}}),
+        iconTransformation(extent={{100,20},{120,40}})));
+
+  Modelica.Blocks.Interfaces.RealOutput PFuel_kW
+    "Fuel (gas) power consumption [kW]"
+    annotation(Placement(transformation(extent={{100,-20},{120,0}}),
+        iconTransformation(extent={{100,-20},{120,0}})));
+
+  Modelica.Blocks.Interfaces.RealOutput Efficiency
+    "Actual efficiency [-]"
+    annotation(Placement(transformation(extent={{100,-60},{120,-40}}),
+        iconTransformation(extent={{100,-60},{120,-40}})));
+
+  // ============================================================================
+  // INTERNAL VARIABLES
+  // ============================================================================
+
+protected
+  Real ModulationActual "Actual modulation (limited to min-max range)";
+  Modelica.Units.SI.Power QHeat_target "Target heat power [W]";
+  Modelica.Units.SI.Power QHeat_actual(start=0) "Actual heat power [W]";
+  Modelica.Units.SI.Power PFuel_actual "Actual fuel power [W]";
+  Modelica.Units.SI.Temperature TReturn_K "Return temperature [K]";
+  Modelica.Units.SI.Temperature TSupply_K(start=333.15) "Supply temperature [K]";
+  Modelica.Units.SI.VolumeFlowRate qv "Volume flow [m³/s]";
+  Modelica.Units.SI.MassFlowRate m_flow "Mass flow [kg/s]";
+  Real eta "Actual efficiency";
+  Real condensing_factor "Factor for condensing operation [0-1]";
+
+equation
+  // ============================================================================
+  // UNIT CONVERSIONS
+  // ============================================================================
+  TReturn_K = TReturn_degC + 273.15;
+  qv = qv_l_per_min / 60000;  // L/min to m³/s
+  m_flow = rho * qv;
+
+  // ============================================================================
+  // MODULATION LOGIC
+  // ============================================================================
+  ModulationActual = if CBon then max(ModulationMin, min(1.0, Modulation)) else 0;
+
+  // ============================================================================
+  // EFFICIENCY CALCULATION - CONDENSING EFFECT
+  // ============================================================================
+  // Efficiency varies between eta_noncondensing (high return temp)
+  // and eta_nominal (low return temp, condensing mode)
+  // Transition occurs around T_condensing (typically 55°C)
+
+  condensing_factor = max(0, min(1, (T_condensing - TReturn_K) / 20));
+  // condensing_factor = 1 when TReturn < 35°C, = 0 when TReturn > 55°C
+
+  eta = eta_noncondensing + condensing_factor * (eta_nominal - eta_noncondensing);
+
+  // ============================================================================
+  // POWER AND TEMPERATURE CALCULATIONS
+  // ============================================================================
+  QHeat_target = ModulationActual * QHeat_nominal;
+
+  // First-order dynamics for heat output
+  tau * der(QHeat_actual) = QHeat_target - QHeat_actual;
+
+  // Fuel consumption
+  PFuel_actual = if CBon and eta > 0.01 then QHeat_actual / eta else 0;
+
+  // ============================================================================
+  // SUPPLY TEMPERATURE - With thermal mass dynamics
+  // ============================================================================
+  // Energy balance on boiler water volume:
+  // rho * V * cp * dT/dt = QHeat - Qloss - Qflow
+  // where Qflow = m_flow * cp * (TSupply - TReturn)
+
+  rho * V_boiler * cp * der(TSupply_K) =
+    QHeat_actual
+    - QlossRate * (TSupply_K - TAmbient)
+    - m_flow * cp * (TSupply_K - TReturn_K);        // Heat input from burner
+                                                    // Heat loss to ambient
+                                                    // Heat delivered to flow
+
+  // Limit supply temperature to maximum
+  // Note: This is handled by the differential equation naturally if QHeat reduces
+
+  // ============================================================================
+  // OUTPUTS
+  // ============================================================================
+  TSupply_degC = min(TFlow_max, TSupply_K) - 273.15;
+  QHeat_kW = QHeat_actual / 1000;
+  PFuel_kW = PFuel_actual / 1000;
+  Efficiency = eta;
+
+initial equation
+  TSupply_K = TReturn_K + 10;  // Start 10K above return
+  QHeat_actual = 0;
+
+  annotation(
+    Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
+      graphics={
+        Rectangle(
+          extent={{-100,100},{100,-100}},
+          lineColor={0,0,0},
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-80,80},{80,-60}},
+          lineColor={0,0,255},
+          fillColor={200,200,255},
+          fillPattern=FillPattern.Solid,
+          lineThickness=1),
+        Text(
+          extent={{-60,60},{60,20}},
+          textColor={0,0,200},
+          textString="CB",
+          textStyle={TextStyle.Bold}),
+        Polygon(
+          points={{-40,-10},{0,30},{40,-10},{20,-10},{20,-40},{-20,-40},{-20,-10},{-40,-10}},
+          lineColor={255,100,0},
+          fillColor={255,150,50},
+          fillPattern=FillPattern.Solid),
+        Line(points={{-50,-60},{-50,-80}}, color={0,0,255}, thickness=1),
+        Line(points={{50,-60},{50,-80}}, color={255,0,0}, thickness=1),
+        Text(
+          extent={{-60,-45},{60,-58}},
+          textColor={0,0,0},
+          textString="Condensing"),
+        Text(
+          extent={{-100,100},{100,82}},
+          textColor={0,0,255},
+          textString="%name"),
+        Ellipse(
+          extent={{-30,-20},{-10,-40}},
+          lineColor={255,200,0},
+          fillColor={255,255,0},
+          fillPattern=FillPattern.Solid),
+        Ellipse(
+          extent={{10,-20},{30,-40}},
+          lineColor={255,200,0},
+          fillColor={255,255,0},
+          fillPattern=FillPattern.Solid)}),
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-120,-120},{120,120}})),
+    Documentation(info="<html>
+<h4>SimpleCondensingBoiler - Gas Condensing Boiler</h4>
+<p>Simplified condensing boiler model based on SimulationX GreenCity physics.</p>
+
+<h5>Features:</h5>
+<ul>
+<li>Modulating heat output (20-100% of nominal)</li>
+<li>Condensing efficiency at low return temperatures</li>
+<li>Thermal mass dynamics (boiler water volume)</li>
+<li>Standby heat losses</li>
+</ul>
+
+<h5>Typical Values:</h5>
+<ul>
+<li>QHeat_nominal: 50 kW (for large house/small apartment building)</li>
+<li>eta_nominal: 98% (condensing mode, return &lt; 35°C)</li>
+<li>eta_noncondensing: 88% (non-condensing, return &gt; 55°C)</li>
+</ul>
+
+<h5>Condensing Effect:</h5>
+<p>When return water temperature is below ~55°C, water vapor in flue gas 
+condenses, recovering latent heat and boosting efficiency above 100% 
+(relative to lower heating value).</p>
+
+<h5>Usage:</h5>
+<p>Connect TReturn_degC from building return, get TSupply_degC to building supply.</p>
+</html>"));
+end SimpleCondensingBoiler;

@@ -1,0 +1,298 @@
+within CoSES_Thermal_ProHMo_PHiL;
+model Building_CHP_CB_PHiL
+  "CHP + CB + Building model for CoSES Lab PHiL - External Inputs Only"
+
+  // ============================================================================
+  // DESCRIPTION
+  // ============================================================================
+  // This model is ready for Power Hardware-in-the-Loop (PHiL) with CoSES Lab.
+  // All inputs come from EXTERNAL sources (the lab), not internal test sources.
+  //
+  // Connect the inputs to your CoSES Lab interface signals.
+  // ============================================================================
+
+  // ============================================================================
+  // EXTERNAL INPUTS (FROM CoSES LAB)
+  // ============================================================================
+
+  // --- Heat Generator Control ---
+  Modelica.Blocks.Interfaces.BooleanInput CHP_on_cmd
+    "CHP on/off command from lab"
+    annotation(Placement(transformation(extent={{-280,160},{-240,200}}),
+        iconTransformation(extent={{-240,140},{-200,180}})));
+
+  Modelica.Blocks.Interfaces.BooleanInput CB_on_cmd
+    "CB on/off command from lab"
+    annotation(Placement(transformation(extent={{-280,120},{-240,160}}),
+        iconTransformation(extent={{-240,100},{-200,140}})));
+
+  Modelica.Blocks.Interfaces.RealInput Modulation_cmd(min=0, max=1)
+    "Power modulation command [0-1] from lab"
+    annotation(Placement(transformation(extent={{-280,80},{-240,120}}),
+        iconTransformation(extent={{-240,60},{-200,100}})));
+
+  // --- Hydraulic ---
+  Modelica.Blocks.Interfaces.RealInput qv_cmd_l_per_min
+    "Volume flow command [L/min] from lab"
+    annotation(Placement(transformation(extent={{-280,40},{-240,80}}),
+        iconTransformation(extent={{-240,20},{-200,60}})));
+
+  // --- Environment ---
+  Modelica.Blocks.Interfaces.RealInput T_ambient_cmd_degC
+    "Outdoor temperature [°C] from lab (or weather station)"
+    annotation(Placement(transformation(extent={{-280,0},{-240,40}}),
+        iconTransformation(extent={{-240,-20},{-200,20}})));
+
+  // --- Internal Gains (Optional - can be constant or from lab) ---
+  Modelica.Blocks.Interfaces.RealInput nPersons_living_cmd(start=2)
+    "Persons in living zone"
+    annotation(Placement(transformation(extent={{-280,-60},{-240,-20}}),
+        iconTransformation(extent={{-240,-80},{-200,-40}})));
+
+  Modelica.Blocks.Interfaces.RealInput nPersons_cellar_cmd(start=0)
+    "Persons in cellar"
+    annotation(Placement(transformation(extent={{-280,-100},{-240,-60}}),
+        iconTransformation(extent={{-240,-120},{-200,-80}})));
+
+  Modelica.Blocks.Interfaces.RealInput nPersons_roof_cmd(start=0)
+    "Persons in roof zone"
+    annotation(Placement(transformation(extent={{-280,-140},{-240,-100}}),
+        iconTransformation(extent={{-240,-160},{-200,-120}})));
+
+  Modelica.Blocks.Interfaces.RealInput P_app_living_cmd_W(start=200)
+    "Appliance power living [W]"
+    annotation(Placement(transformation(extent={{280,-60},{240,-20}}),
+        iconTransformation(extent={{240,-80},{200,-40}})));
+
+  Modelica.Blocks.Interfaces.RealInput P_app_cellar_cmd_W(start=80)
+    "Appliance power cellar [W]"
+    annotation(Placement(transformation(extent={{280,-100},{240,-60}}),
+        iconTransformation(extent={{240,-120},{200,-80}})));
+
+  Modelica.Blocks.Interfaces.RealInput P_app_roof_cmd_W(start=50)
+    "Appliance power roof [W]"
+    annotation(Placement(transformation(extent={{280,-140},{240,-100}}),
+        iconTransformation(extent={{240,-160},{200,-120}})));
+
+  // ============================================================================
+  // EXTERNAL OUTPUTS (TO CoSES LAB)
+  // ============================================================================
+
+  // --- Zone Temperatures ---
+  Modelica.Blocks.Interfaces.RealOutput T_living_out_degC
+    "Living zone temperature [°C]"
+    annotation(Placement(transformation(extent={{240,160},{280,200}}),
+        iconTransformation(extent={{200,140},{240,180}})));
+
+  Modelica.Blocks.Interfaces.RealOutput T_cellar_out_degC
+    "Cellar temperature [°C]"
+    annotation(Placement(transformation(extent={{240,120},{280,160}}),
+        iconTransformation(extent={{200,100},{240,140}})));
+
+  Modelica.Blocks.Interfaces.RealOutput T_roof_out_degC
+    "Roof zone temperature [°C]"
+    annotation(Placement(transformation(extent={{240,80},{280,120}}),
+        iconTransformation(extent={{200,60},{240,100}})));
+
+  // --- Water Temperatures ---
+  Modelica.Blocks.Interfaces.RealOutput T_supply_out_degC
+    "Supply water temperature [°C]"
+    annotation(Placement(transformation(extent={{240,40},{280,80}}),
+        iconTransformation(extent={{200,20},{240,60}})));
+
+  Modelica.Blocks.Interfaces.RealOutput T_return_out_degC
+    "Return water temperature [°C]"
+    annotation(Placement(transformation(extent={{240,0},{280,40}}),
+        iconTransformation(extent={{200,-20},{240,20}})));
+
+  // --- Heat Output ---
+  Modelica.Blocks.Interfaces.RealOutput CHP_QHeat_out_kW
+    "CHP thermal output [kW]"
+    annotation(Placement(transformation(extent={{-240,-180},{-280,-140}}),
+        iconTransformation(extent={{-200,-200},{-240,-160}})));
+
+  Modelica.Blocks.Interfaces.RealOutput CB_QHeat_out_kW
+    "CB thermal output [kW]"
+    annotation(Placement(transformation(extent={{-240,-220},{-280,-180}}),
+        iconTransformation(extent={{-200,-240},{-240,-200}})));
+
+  Modelica.Blocks.Interfaces.RealOutput Total_QHeat_out_kW
+    "Total thermal output [kW]"
+    annotation(Placement(transformation(extent={{240,-180},{280,-140}}),
+        iconTransformation(extent={{200,-200},{240,-160}})));
+
+  // --- Electrical Output ---
+  Modelica.Blocks.Interfaces.RealOutput CHP_PElec_out_kW
+    "CHP electrical output [kW]"
+    annotation(Placement(transformation(extent={{240,-220},{280,-180}}),
+        iconTransformation(extent={{200,-240},{240,-200}})));
+
+  // ============================================================================
+  // INTERNAL COMPONENTS
+  // ============================================================================
+
+  Backup.SimpleCHP_v2 chp(
+    QHeat_nominal=12500,
+    PElec_nominal=5000,
+    tau=60) annotation (Placement(transformation(extent={{-140,40},{-100,80}})));
+
+  Backup.SimpleCondensingBoiler cb(
+    QHeat_nominal=50000,
+    eta_nominal=0.98,
+    eta_noncondensing=0.88,
+    ModulationMin=0.20,
+    tau=30) annotation (Placement(transformation(extent={{-140,-40},{-100,0}})));
+
+  ThermoEnergeticAnalysis.ThreeZoneBuilding_PHiL building(
+    AZone_cellar=80,
+    AZone_living=100,
+    AZone_roof=60,
+    TZoneInit_cellar=288.15,
+    TZoneInit_living=293.15,
+    TZoneInit_roof=289.15,
+    TRef_cellar=288.15,
+    TRef_living=294.15,
+    TRef_roof=294.15,
+    cellarHeat=true,
+    roofHeat=true)
+    annotation (Placement(transformation(extent={{60,-50},{140,50}})));
+
+  // ============================================================================
+  // INTERNAL VARIABLES
+  // ============================================================================
+
+protected
+  Real T_supply_mixed_degC "Mixed supply temperature";
+  Real Q_total_kW "Total heat output";
+
+equation
+  // ============================================================================
+  // CHP CONNECTIONS
+  // ============================================================================
+
+  chp.CHPon = CHP_on_cmd;
+  chp.Modulation = Modulation_cmd;
+  chp.TReturn_degC = building.STM_HCRL_Set_degC;
+  chp.qv_l_per_min = qv_cmd_l_per_min;
+
+  // ============================================================================
+  // CB CONNECTIONS
+  // ============================================================================
+
+  cb.CBon = CB_on_cmd;
+  cb.Modulation = Modulation_cmd;
+  cb.TReturn_degC = building.STM_HCRL_Set_degC;
+  cb.qv_l_per_min = qv_cmd_l_per_min;
+
+  // ============================================================================
+  // SUPPLY TEMPERATURE MIXING
+  // ============================================================================
+
+  Q_total_kW = chp.QHeat_kW + cb.QHeat_kW;
+
+  if Q_total_kW > 0.1 then
+    T_supply_mixed_degC = (chp.QHeat_kW * chp.TSupply_degC +
+                           cb.QHeat_kW * cb.TSupply_degC) / Q_total_kW;
+  else
+    T_supply_mixed_degC = building.STM_HCRL_Set_degC;
+  end if;
+
+  // ============================================================================
+  // BUILDING CONNECTIONS
+  // ============================================================================
+
+  building.STM_HCVLaM_degC = T_supply_mixed_degC;
+  building.SFW_HCRLbM_l_per_min = qv_cmd_l_per_min;
+  building.T_ambient_degC = T_ambient_cmd_degC;
+
+  // Internal gains
+  building.nPersons_living_in = nPersons_living_cmd;
+  building.nPersons_cellar_in = nPersons_cellar_cmd;
+  building.nPersons_roof_in = nPersons_roof_cmd;
+  building.P_appliances_living_W_in = P_app_living_cmd_W;
+  building.P_appliances_cellar_W_in = P_app_cellar_cmd_W;
+  building.P_appliances_roof_W_in = P_app_roof_cmd_W;
+
+  // ============================================================================
+  // OUTPUTS
+  // ============================================================================
+
+  T_living_out_degC = building.T_roomIs_degC;
+  T_cellar_out_degC = building.T_cellarIs_degC;
+  T_roof_out_degC = building.T_roofIs_degC;
+  T_supply_out_degC = T_supply_mixed_degC;
+  T_return_out_degC = building.STM_HCRL_Set_degC;
+
+  CHP_QHeat_out_kW = chp.QHeat_kW;
+  CB_QHeat_out_kW = cb.QHeat_kW;
+  Total_QHeat_out_kW = Q_total_kW;
+  CHP_PElec_out_kW = chp.PElec_kW;
+
+  annotation(
+    Icon(coordinateSystem(preserveAspectRatio=false, extent={{-220,-260},{220,220}}),
+      graphics={
+        Rectangle(extent={{-220,220},{220,-260}}, lineColor={0,0,0},
+          fillColor={255,255,255}, fillPattern=FillPattern.Solid),
+        Rectangle(extent={{-180,180},{-80,100}}, lineColor={255,128,0},
+          fillColor={255,200,150}, fillPattern=FillPattern.Solid),
+        Text(extent={{-170,160},{-90,120}}, textString="CHP",
+          textColor={255,128,0}, textStyle={TextStyle.Bold}),
+        Rectangle(extent={{-180,80},{-80,0}}, lineColor={0,0,255},
+          fillColor={200,200,255}, fillPattern=FillPattern.Solid),
+        Text(extent={{-170,60},{-90,20}}, textString="CB",
+          textColor={0,0,200}, textStyle={TextStyle.Bold}),
+        Rectangle(extent={{20,140},{180,-60}}, lineColor={139,69,19},
+          fillColor={255,228,196}, fillPattern=FillPattern.Solid),
+        Polygon(points={{20,140},{100,200},{180,140},{20,140}},
+          lineColor={178,34,34}, fillColor={178,34,34}, fillPattern=FillPattern.Solid),
+        Text(extent={{40,80},{160,40}}, textString="Building", textColor={0,0,0}),
+        Line(points={{-80,140},{20,90}}, color={255,0,0}, thickness=1),
+        Line(points={{-80,40},{20,90}}, color={255,0,0}, thickness=1),
+        Line(points={{20,-20},{-80,40},{-80,100}}, color={0,0,255}, thickness=1),
+        Text(extent={{-200,215},{200,185}}, textString="%name",
+          textColor={0,0,255}, textStyle={TextStyle.Bold}),
+        Text(extent={{-200,-220},{200,-250}},
+          textString="PHiL Ready - External Inputs", textColor={128,128,128})}
+
+        // CHP box
+
+        // CB box
+
+        // Building
+
+        // Flow arrows
+
+        // Title
+),  Diagram(coordinateSystem(extent={{-260,-240},{260,220}})),
+    Documentation(info="<html>
+<h4>Building_CHP_CB_PHiL - CoSES Lab Ready</h4>
+
+<p>This model has NO internal test sources. All inputs must come from external connections (CoSES Lab).</p>
+
+<h5>Required Inputs from CoSES Lab:</h5>
+<table border='1'>
+<tr><th>Input</th><th>Type</th><th>Unit</th><th>Description</th></tr>
+<tr><td>CHP_on_cmd</td><td>Boolean</td><td>-</td><td>CHP on/off command</td></tr>
+<tr><td>CB_on_cmd</td><td>Boolean</td><td>-</td><td>CB on/off command</td></tr>
+<tr><td>Modulation_cmd</td><td>Real</td><td>0-1</td><td>Power modulation</td></tr>
+<tr><td>qv_cmd_l_per_min</td><td>Real</td><td>L/min</td><td>Flow rate command</td></tr>
+<tr><td>T_ambient_cmd_degC</td><td>Real</td><td>°C</td><td>Outdoor temperature</td></tr>
+<tr><td>nPersons_*_cmd</td><td>Real</td><td>-</td><td>Occupancy per zone</td></tr>
+<tr><td>P_app_*_cmd_W</td><td>Real</td><td>W</td><td>Appliance power per zone</td></tr>
+</table>
+
+<h5>Outputs to CoSES Lab:</h5>
+<table border='1'>
+<tr><th>Output</th><th>Unit</th><th>Description</th></tr>
+<tr><td>T_living_out_degC</td><td>°C</td><td>Living zone temperature</td></tr>
+<tr><td>T_cellar_out_degC</td><td>°C</td><td>Cellar temperature</td></tr>
+<tr><td>T_roof_out_degC</td><td>°C</td><td>Roof temperature</td></tr>
+<tr><td>T_supply_out_degC</td><td>°C</td><td>Supply water temperature</td></tr>
+<tr><td>T_return_out_degC</td><td>°C</td><td>Return water temperature</td></tr>
+<tr><td>CHP_QHeat_out_kW</td><td>kW</td><td>CHP thermal output</td></tr>
+<tr><td>CB_QHeat_out_kW</td><td>kW</td><td>CB thermal output</td></tr>
+<tr><td>Total_QHeat_out_kW</td><td>kW</td><td>Total heat output</td></tr>
+<tr><td>CHP_PElec_out_kW</td><td>kW</td><td>CHP electrical output</td></tr>
+</table>
+</html>"));
+end Building_CHP_CB_PHiL;

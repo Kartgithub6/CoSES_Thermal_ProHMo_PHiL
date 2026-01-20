@@ -1,0 +1,313 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model ThreeZoneBuilding_WORKING
+  "Three-zone building - SIMPLIFIED VERSION THAT WORKS"
+
+  inner Modelica.Fluid.System system
+    annotation(Placement(visible=true,transformation(origin={-170,170},extent={{-10,-10},{10,10}},rotation=0)));
+
+  replaceable package Medium = Modelica.Media.Water.StandardWater;
+
+  // PORTS
+  Modelica.Fluid.Interfaces.FluidPort_a port_a(redeclare package Medium=Medium)
+    annotation(Placement(visible=true,transformation(origin={-200,0},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Fluid.Interfaces.FluidPort_b port_b(redeclare package Medium=Medium)
+    annotation(Placement(visible=true,transformation(origin={-200,-100},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // OUTPUTS (ALREADY IN KELVIN - WILL CONVERT IN WRAPPER)
+  Modelica.Blocks.Interfaces.RealOutput TZone_cellar
+    annotation(Placement(visible=true,transformation(origin={210,140},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealOutput TZone_living
+    annotation(Placement(visible=true,transformation(origin={210,40},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealOutput TZone_roof
+    annotation(Placement(visible=true,transformation(origin={210,-60},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealOutput valve_cellar_opening
+    annotation(Placement(visible=true,transformation(origin={210,100},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealOutput valve_living_opening
+    annotation(Placement(visible=true,transformation(origin={210,0},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealOutput valve_roof_opening
+    annotation(Placement(visible=true,transformation(origin={210,-140},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealOutput qvRef
+    annotation(Placement(visible=true,transformation(origin={210,-100},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // INPUTS
+  Modelica.Blocks.Interfaces.RealInput nPersons_cellar(start=0)
+    annotation(Placement(visible=true,transformation(origin={-220,180},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealInput nPersons_living(start=0)
+    annotation(Placement(visible=true,transformation(origin={-220,140},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealInput nPersons_roof(start=0)
+    annotation(Placement(visible=true,transformation(origin={-220,100},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealInput P_appliances_cellar_W(start=50)
+    annotation(Placement(visible=true,transformation(origin={230,180},extent={{-10,-10},{10,10}},rotation=180)));
+
+  Modelica.Blocks.Interfaces.RealInput P_appliances_living_W(start=200)
+    annotation(Placement(visible=true,transformation(origin={230,140},extent={{-10,-10},{10,10}},rotation=180)));
+
+  Modelica.Blocks.Interfaces.RealInput P_appliances_roof_W(start=50)
+    annotation(Placement(visible=true,transformation(origin={230,100},extent={{-10,-10},{10,10}},rotation=180)));
+
+  // PARAMETERS - REALISTIC VALUES
+  parameter Modelica.Units.SI.Area AZone_cellar=80;
+  parameter Modelica.Units.SI.Area AZone_living=100;
+  parameter Modelica.Units.SI.Area AZone_roof=60;
+  parameter Modelica.Units.SI.Length hZone_cellar=2.2;
+  parameter Modelica.Units.SI.Length hZone_living=2.5;
+  parameter Modelica.Units.SI.Length hZone_roof=2.3;
+  parameter Modelica.Units.SI.Temperature TRef_cellar=293.15 "20°C - same as other zones";
+  parameter Modelica.Units.SI.Temperature TRef_living=293.15 "20°C";
+  parameter Modelica.Units.SI.Temperature TRef_roof=293.15 "20°C";
+  parameter Modelica.Units.SI.Temperature TZoneInit_cellar=288.15 "15°C";
+  parameter Modelica.Units.SI.Temperature TZoneInit_living=288.15 "15°C";
+  parameter Modelica.Units.SI.Temperature TZoneInit_roof=288.15 "15°C";
+  parameter Boolean cellarHeat=true;
+  parameter Boolean roofHeat=true;
+  parameter Real k_PI=0.5;
+  parameter Modelica.Units.SI.Time Ti_PI=300;
+
+  // SENSORS
+  Modelica.Fluid.Sensors.VolumeFlowRate qvMedium(redeclare package Medium=Medium)
+    annotation(Placement(visible=true,transformation(origin={-170,0},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Fluid.Sensors.TemperatureTwoPort TMedium(redeclare package Medium=Medium)
+    annotation(Placement(visible=true,transformation(origin={-140,0},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // JUNCTIONS
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeMain(redeclare package Medium=Medium)
+    annotation(Placement(visible=true,transformation(origin={-110,0},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeLivingRoof(redeclare package Medium=Medium)
+    annotation(Placement(visible=true,transformation(origin={-70,-50},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeMergeLivingRoof(redeclare package Medium=Medium)
+    annotation(Placement(visible=true,transformation(origin={90,-50},extent={{-10,10},{10,-10}},rotation=0)));
+
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeMergeMain(redeclare package Medium=Medium)
+    annotation(Placement(visible=true,transformation(origin={130,-100},extent={{-10,10},{10,-10}},rotation=0)));
+
+  // VALVES
+  Modelica.Fluid.Valves.ValveLinear valve_cellar(redeclare package Medium=Medium,dp_nominal=10000,m_flow_nominal=0.05)
+    annotation(Placement(visible=true,transformation(origin={-50,100},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Fluid.Valves.ValveLinear valve_living(redeclare package Medium=Medium,dp_nominal=10000,m_flow_nominal=0.05)
+    annotation(Placement(visible=true,transformation(origin={-50,0},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Fluid.Valves.ValveLinear valve_roof(redeclare package Medium=Medium,dp_nominal=10000,m_flow_nominal=0.05)
+    annotation(Placement(visible=true,transformation(origin={-50,-100},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // PI CONTROLLERS
+  Modelica.Blocks.Continuous.LimPID PI_cellar(
+    controllerType=Modelica.Blocks.Types.SimpleController.PI,
+    k=k_PI,
+    Ti=Ti_PI,
+    yMax=if cellarHeat then 1.0 else 0,
+    yMin=0,
+    initType=Modelica.Blocks.Types.Init.InitialOutput,
+    y_start=if cellarHeat then 0.5 else 0)
+    annotation(Placement(visible=true,transformation(origin={-120,130},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Continuous.LimPID PI_living(
+    controllerType=Modelica.Blocks.Types.SimpleController.PI,
+    k=k_PI,
+    Ti=Ti_PI,
+    yMax=1.0,
+    yMin=0,
+    initType=Modelica.Blocks.Types.Init.InitialOutput,
+    y_start=0.5)
+    annotation(Placement(visible=true,transformation(origin={-120,30},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Continuous.LimPID PI_roof(
+    controllerType=Modelica.Blocks.Types.SimpleController.PI,
+    k=k_PI,
+    Ti=Ti_PI,
+    yMax=if roofHeat then 1.0 else 0,
+    yMin=0,
+    initType=Modelica.Blocks.Types.Init.InitialOutput,
+    y_start=if roofHeat then 0.5 else 0)
+    annotation(Placement(visible=true,transformation(origin={-120,-70},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // RETURN SENSOR
+  Modelica.Fluid.Sensors.TemperatureTwoPort TReturn(redeclare package Medium=Medium)
+    annotation(Placement(visible=true,transformation(origin={-160,-100},extent={{10,-10},{-10,10}},rotation=0)));
+
+  // SIMPLE HYDRONIC SYSTEMS (NOT RadiatorEN442_2)
+  HydronicSystem.SystemWithZoneAndHydronics cellar_hydSys(redeclare package Medium=Medium)
+    annotation(Placement(visible=true,transformation(origin={0,110},extent={{-20,-20},{20,20}},rotation=0)));
+
+  HydronicSystem.SystemWithZoneAndHydronics living_hydSys(redeclare package Medium=Medium)
+    annotation(Placement(visible=true,transformation(origin={0,10},extent={{-20,-20},{20,20}},rotation=0)));
+
+  HydronicSystem.SystemWithZoneAndHydronics roof_hydSys(redeclare package Medium=Medium)
+    annotation(Placement(visible=true,transformation(origin={0,-90},extent={{-20,-20},{20,20}},rotation=0)));
+
+  // HEATED ZONES - WITH REALISTIC CELLAR
+  BuildingSystem.Building.HeatedZone cellar_zone(
+    ZoneIndex=1,
+    NumberZones=3,
+    AZone=AZone_cellar,
+    hZone=hZone_cellar,
+    TZoneInit=TZoneInit_cellar,
+    infiltrationRate=0.02,      // Very low - sealed basement
+    occupancyLoad=50,
+    applianceLoad=300           // High - continuous appliances
+)   annotation(Placement(visible=true,transformation(origin={70,110},extent={{-20,-20},{20,20}},rotation=0)));
+
+  BuildingSystem.Building.HeatedZone living_zone(
+    ZoneIndex=2,
+    NumberZones=3,
+    AZone=AZone_living,
+    hZone=hZone_living,
+    TZoneInit=TZoneInit_living,
+    infiltrationRate=0.5,
+    occupancyLoad=200,
+    applianceLoad=150)
+    annotation(Placement(visible=true,transformation(origin={70,10},extent={{-20,-20},{20,20}},rotation=0)));
+
+  BuildingSystem.Building.HeatedZone roof_zone(
+    ZoneIndex=3,
+    NumberZones=3,
+    AZone=AZone_roof,
+    hZone=hZone_roof,
+    TZoneInit=TZoneInit_roof,
+    infiltrationRate=0.4,
+    occupancyLoad=100,
+    applianceLoad=50)
+    annotation(Placement(visible=true,transformation(origin={70,-90},extent={{-20,-20},{20,20}},rotation=0)));
+
+  // CONSTANTS
+  Modelica.Blocks.Sources.Constant TRefConst_cellar(k=TRef_cellar)
+    annotation(Placement(visible=true,transformation(origin={-160,150},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Sources.Constant TRefConst_living(k=TRef_living)
+    annotation(Placement(visible=true,transformation(origin={-160,50},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Sources.Constant TRefConst_roof(k=TRef_roof)
+    annotation(Placement(visible=true,transformation(origin={-160,-50},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Sources.Constant WindowShadingConst_cellar[3](each k=0)
+    annotation(Placement(visible=true,transformation(origin={50,150},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Sources.Constant WindowShadingConst_living[3](each k=0)
+    annotation(Placement(visible=true,transformation(origin={50,50},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Sources.Constant WindowShadingConst_roof[3](each k=0)
+    annotation(Placement(visible=true,transformation(origin={50,-50},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Sources.Constant Q_radiation_cellar(k=0)
+    annotation(Placement(visible=true,transformation(origin={30,160},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Sources.Constant Q_radiation_living(k=0)
+    annotation(Placement(visible=true,transformation(origin={30,60},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Sources.Constant Q_radiation_roof(k=0)
+    annotation(Placement(visible=true,transformation(origin={30,-40},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // VOLUME FLOW APPROXIMATION
+  Modelica.Blocks.Math.Add3 qvSum
+    annotation(Placement(visible=true,transformation(origin={170,-100},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Math.Gain qv_cellar_approx(k=6.0)
+    annotation(Placement(visible=true,transformation(origin={130,130},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Math.Gain qv_living_approx(k=8.0)
+    annotation(Placement(visible=true,transformation(origin={130,30},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Math.Gain qv_roof_approx(k=6.0)
+    annotation(Placement(visible=true,transformation(origin={130,-70},extent={{-10,-10},{10,10}},rotation=0)));
+
+equation
+  // FLUID - SUPPLY
+  connect(port_a,qvMedium.port_a);
+  connect(qvMedium.port_b,TMedium.port_a);
+  connect(TMedium.port_b,teeMain.port_1);
+  connect(teeMain.port_2,valve_cellar.port_a);
+  connect(teeMain.port_3,teeLivingRoof.port_1);
+  connect(teeLivingRoof.port_2,valve_living.port_a);
+  connect(teeLivingRoof.port_3,valve_roof.port_a);
+  connect(valve_cellar.port_b,cellar_hydSys.port_a);
+  connect(valve_living.port_b,living_hydSys.port_a);
+  connect(valve_roof.port_b,roof_hydSys.port_a);
+
+  // FLUID - RETURN
+  connect(cellar_hydSys.port_b,teeMergeMain.port_2);
+  connect(living_hydSys.port_b,teeMergeLivingRoof.port_2);
+  connect(roof_hydSys.port_b,teeMergeLivingRoof.port_3);
+  connect(teeMergeLivingRoof.port_1,teeMergeMain.port_3);
+  connect(teeMergeMain.port_1,TReturn.port_a);
+  connect(TReturn.port_b,port_b);
+
+  // THERMAL
+  connect(cellar_hydSys.port_zone,cellar_zone.heatPort);
+  connect(living_hydSys.port_zone,living_zone.heatPort);
+  connect(roof_hydSys.port_zone,roof_zone.heatPort);
+
+  // PI CONTROLLERS
+  connect(TRefConst_cellar.y,PI_cellar.u_s);
+  connect(cellar_zone.TZone,PI_cellar.u_m);
+  connect(PI_cellar.y,valve_cellar.opening);
+  connect(TRefConst_cellar.y,cellar_zone.TZoneRef);
+
+  connect(TRefConst_living.y,PI_living.u_s);
+  connect(living_zone.TZone,PI_living.u_m);
+  connect(PI_living.y,valve_living.opening);
+  connect(TRefConst_living.y,living_zone.TZoneRef);
+
+  connect(TRefConst_roof.y,PI_roof.u_s);
+  connect(roof_zone.TZone,PI_roof.u_m);
+  connect(PI_roof.y,valve_roof.opening);
+  connect(TRefConst_roof.y,roof_zone.TZoneRef);
+
+  // ZONE INPUTS
+  connect(WindowShadingConst_cellar.y,cellar_zone.WindowShading);
+  connect(Q_radiation_cellar.y,cellar_zone.Q_radiation_W);
+  connect(nPersons_cellar,cellar_zone.nPersons);
+  connect(P_appliances_cellar_W,cellar_zone.P_appliances_W);
+
+  connect(WindowShadingConst_living.y,living_zone.WindowShading);
+  connect(Q_radiation_living.y,living_zone.Q_radiation_W);
+  connect(nPersons_living,living_zone.nPersons);
+  connect(P_appliances_living_W,living_zone.P_appliances_W);
+
+  connect(WindowShadingConst_roof.y,roof_zone.WindowShading);
+  connect(Q_radiation_roof.y,roof_zone.Q_radiation_W);
+  connect(nPersons_roof,roof_zone.nPersons);
+  connect(P_appliances_roof_W,roof_zone.P_appliances_W);
+
+  // OUTPUTS (IN KELVIN)
+  connect(cellar_zone.TZone,TZone_cellar);
+  connect(living_zone.TZone,TZone_living);
+  connect(roof_zone.TZone,TZone_roof);
+  connect(PI_cellar.y,valve_cellar_opening);
+  connect(PI_living.y,valve_living_opening);
+  connect(PI_roof.y,valve_roof_opening);
+
+  // VOLUME FLOW
+  connect(PI_cellar.y,qv_cellar_approx.u);
+  connect(PI_living.y,qv_living_approx.u);
+  connect(PI_roof.y,qv_roof_approx.u);
+  connect(qv_cellar_approx.y,qvSum.u1);
+  connect(qv_living_approx.y,qvSum.u2);
+  connect(qv_roof_approx.y,qvSum.u3);
+  connect(qvSum.y,qvRef);
+
+  annotation(
+    Documentation(info="<html>
+<h4>ThreeZoneBuilding_WORKING - Simplified, Tested Version</h4>
+<p>Uses simple SystemWithZoneAndHydronics (not RadiatorEN442_2) for reliability.</p>
+<p>Cellar configured as realistic basement: low infiltration, high appliance load.</p>
+<p>All three supervisor concerns addressed:</p>
+<ol>
+<li>PI controllers modulate valves</li>
+<li>Pressure boundaries at PHiL level</li>
+<li>Flow varies naturally (valve-driven)</li>
+</ol>
+</html>"));
+end ThreeZoneBuilding_WORKING;

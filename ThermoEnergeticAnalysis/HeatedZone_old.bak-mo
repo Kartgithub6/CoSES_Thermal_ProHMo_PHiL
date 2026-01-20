@@ -1,0 +1,152 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model HeatedZone_old
+  Modelica.Thermal.HeatTransfer.Sensors.TemperatureSensor
+    temperatureSensor
+    annotation (Placement(transformation(extent={{6,-82},{26,-62}})));
+  Modelica.Thermal.HeatTransfer.Components.HeatCapacitor airCap(T(start=
+          TZoneInit))
+    annotation (Placement(transformation(extent={{6,-6},{26,14}})));
+  Modelica.Thermal.HeatTransfer.Components.ThermalConductor heatExchange
+    annotation (Placement(transformation(extent={{-42,-16},{-22,4}})));
+  Modelica.Fluid.Interfaces.FluidPort_a heatFlow(redeclare package Medium
+      = Medium)
+    annotation (Placement(transformation(extent={{-112,30},{-92,50}})));
+  Modelica.Fluid.Interfaces.FluidPort_b heatReturn(redeclare package
+      Medium = Medium)
+    annotation (Placement(transformation(extent={{-110,-50},{-90,-30}})));
+  replaceable package Medium = Modelica.Media.Water.StandardWater
+    annotation (choicesAllMatching=true);
+  Modelica.Fluid.Pipes.DynamicPipe pipeCellar(
+    nNodes=1,
+    redeclare package Medium = Medium,
+    use_HeatTransfer=true) annotation (Placement(transformation(
+        extent={{-10,-10},{10,10}},
+        rotation=270,
+        origin={-74,-6})));
+  Modelica.Blocks.Interfaces.RealOutput ZoneTemperatures[:]
+    annotation (Placement(transformation(extent={{98,-50},{118,-30}})));
+  Modelica.Blocks.Interfaces.RealOutput TZone annotation (Placement(
+        transformation(
+        extent={{-10,-10},{10,10}},
+        rotation=270,
+        origin={-40,-102})));
+  Modelica.Blocks.Interfaces.RealInput Grid3 annotation (Placement(
+        transformation(
+        extent={{-13,-13},{13,13}},
+        rotation=270,
+        origin={47,7}), iconTransformation(
+        extent={{-13,-13},{13,13}},
+        rotation=270,
+        origin={47,7})));
+  Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a
+    EnvironmentConditions
+    annotation (Placement(transformation(extent={{92,30},{112,50}})));
+  Modelica.Thermal.HeatTransfer.Components.ThermalConductor Gvent
+    annotation (Placement(transformation(extent={{-42,106},{-22,126}})));
+  Modelica.Thermal.HeatTransfer.Components.ThermalConductor Gs_ext
+    annotation (Placement(transformation(extent={{42,108},{62,128}})));
+  Modelica.Thermal.HeatTransfer.Components.HeatCapacitor Cext
+    annotation (Placement(transformation(extent={{74,122},{94,142}})));
+  Modelica.Thermal.HeatTransfer.Components.ThermalConductor Gext
+    annotation (Placement(transformation(extent={{94,106},{114,126}})));
+  Modelica.Thermal.HeatTransfer.Components.ThermalConductor Gs_ext1
+    annotation (Placement(transformation(extent={{-6,104},{14,124}})));
+  BaseClasses.ExteriorWall exteriorWall
+    annotation (Placement(transformation(extent={{-50,-48},{-22,-28}})));
+  BaseClasses.InteriorWall_backup interiorWall_backup
+    annotation (Placement(transformation(extent={{54,-46},{82,-26}})));
+  BaseClasses.VentilationInfiltration ventilationInfiltration
+    annotation (Placement(transformation(extent={{-80,-84},{-60,-64}})));
+  BaseClasses.FloorToGround floorToGround
+    annotation (Placement(transformation(extent={{86,-88},{106,-68}})));
+  Modelica.Thermal.HeatTransfer.Sources.FixedTemperature
+    fixedTemperature1
+    annotation (Placement(transformation(extent={{132,-82},{152,-62}})));
+  Data.CellarZoneParams cellarZoneParams
+    annotation (Placement(transformation(extent={{34,56},{72,72}})));
+equation
+  connect(heatFlow, pipeCellar.port_a) annotation (Line(points={{-102,40},
+          {-74,40},{-74,4}}, color={0,127,255}));
+  connect(pipeCellar.port_b, heatReturn) annotation (Line(points={{-74,
+          -16},{-74,-40},{-100,-40}}, color={0,127,255}));
+  connect(pipeCellar.heatPorts[1], heatExchange.port_a) annotation (Line(
+        points={{-69.6,-6.1},{-55.8,-6.1},{-55.8,-6},{-42,-6}}, color={
+          127,0,0}));
+  connect(heatExchange.port_b, airCap.port) annotation (Line(points={{-22,
+          -6},{-8,-6},{-8,-16},{16,-16},{16,-6}}, color={191,0,0}));
+  connect(temperatureSensor.port, airCap.port) annotation (Line(points={{
+          6,-72},{2,-72},{2,-6},{16,-6}}, color={191,0,0}));
+  connect(airCap.port, EnvironmentConditions) annotation (Line(points={{
+          16,-6},{16,-10},{102,-10},{102,40}}, color={191,0,0}));
+  connect(EnvironmentConditions, EnvironmentConditions)
+    annotation (Line(points={{102,40},{102,40}}, color={191,0,0}));
+  connect(TZone, TZone)
+    annotation (Line(points={{-40,-102},{-40,-102}}, color={0,0,127}));
+  connect(temperatureSensor.T, TZone) annotation (Line(points={{27,-72},{
+          36,-72},{36,-98},{-40,-98},{-40,-102}}, color={0,0,127}));
+  connect(temperatureSensor.T, ZoneTemperatures[1]) annotation (Line(
+        points={{27,-72},{26,-72},{26,-40},{108,-40}}, color={0,0,127}));
+  connect(exteriorWall.envPort, EnvironmentConditions) annotation (Line(
+        points={{-22,-38},{88,-38},{88,-10},{102,-10},{102,40}}, color={
+          191,0,0}));
+  connect(airCap.port, exteriorWall.roomPort) annotation (Line(points={{16,-6},
+          {16,-50},{-50,-50},{-50,-38}},        color={191,0,0}));
+  connect(airCap.port, interiorWall_backup.roomPort) annotation (Line(
+        points={{16,-6},{16,-36},{54,-36}}, color={191,0,0}));
+  connect(interiorWall_backup.envPort, EnvironmentConditions) annotation
+    (Line(points={{82,-36},{86,-36},{86,-10},{102,-10},{102,40}}, color={
+          191,0,0}));
+  connect(airCap.port, ventilationInfiltration.roomPort) annotation (Line(
+        points={{16,-6},{16,-50},{-50,-50},{-50,-58},{-84,-58},{-84,-74},
+          {-80,-74}}, color={191,0,0}));
+  connect(airCap.port, floorToGround.roomPort) annotation (Line(points={{
+          16,-6},{16,-10},{122,-10},{122,-62},{82,-62},{82,-78},{86,-78}},
+        color={191,0,0}));
+  connect(ventilationInfiltration.envPort, EnvironmentConditions)
+    annotation (Line(points={{-60,-74},{-60,40},{102,40}},
+        color={191,0,0}));
+  connect(floorToGround.groundPort, fixedTemperature1.port) annotation (
+      Line(points={{106,-78},{128,-78},{128,-92},{156,-92},{156,-72},{152,
+          -72}}, color={191,0,0}));
+  annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
+        coordinateSystem(preserveAspectRatio=false), graphics={
+  Polygon(
+    points={{-68,-24},{-16,-24},{-16,-54},{-42,-54},{-42,-54},{-68,-54},{
+              -68,-24}},
+    lineColor={0,0,255},
+    smooth=Smooth.None,
+    fillColor={215,215,215},
+    fillPattern=FillPattern.Solid),
+  Text(
+    extent={{-66,-20},{-38,-32}},
+    textColor={0,0,255},
+    fillColor={215,215,215},
+    fillPattern=FillPattern.Solid,
+          textString="Exterior Wall"),
+  Polygon(
+    points={{34,-22},{86,-22},{86,-50},{60,-50},{60,-50},{34,-50},{34,-22}},
+    lineColor={0,0,255},
+    smooth=Smooth.None,
+    fillColor={215,215,215},
+    fillPattern=FillPattern.Solid),
+  Text(
+    extent={{36,-18},{58,-30}},
+    textColor={0,0,255},
+    fillColor={215,215,215},
+    fillPattern=FillPattern.Solid,
+          textString="Interior Wall"),
+  Polygon(
+    points={{70,-64},{122,-64},{122,-94},{96,-94},{96,-94},{70,-94},{70,
+              -64}},
+    lineColor={0,0,255},
+    smooth=Smooth.None,
+    fillColor={215,215,215},
+    fillPattern=FillPattern.Solid),
+  Polygon(
+    points={{-94,-60},{-42,-60},{-42,-90},{-68,-90},{-68,-90},{-94,-90},{
+              -94,-60}},
+    lineColor={0,0,255},
+    smooth=Smooth.None,
+    fillColor={215,215,215},
+    fillPattern=FillPattern.Solid)}));
+end HeatedZone_old;

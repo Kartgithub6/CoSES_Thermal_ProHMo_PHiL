@@ -1,0 +1,31 @@
+# Dymola / simulation outputs & logs (common)
+*.mat
+*.csv
+*.log
+*.bak
+*.tmp
+*.dsres
+dslog.txt
+dymola.log
+
+# FMU / binaries / build artifacts
+*.fmu
+*.dll
+*.so
+*.dylib
+*.exe
+*.obj
+*.o
+*.a
+*.lib
+
+# Zip/exports (optional)
+*.zip
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Python cache (if any scripts exist)
+__pycache__/
+*.pyc

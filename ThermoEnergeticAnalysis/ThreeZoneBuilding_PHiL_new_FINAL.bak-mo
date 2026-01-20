@@ -1,0 +1,160 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model ThreeZoneBuilding_PHiL_new_FINAL
+  "PHiL wrapper - HYDRAULICALLY STABLE"
+
+  replaceable package Medium=Modelica.Media.Water.StandardWater;
+  inner Modelica.Fluid.System system(energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyStateInitial,massDynamics=Modelica.Fluid.Types.Dynamics.SteadyStateInitial) annotation(Placement(visible=true,transformation(origin={-190,170},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // PHiL inputs
+  Modelica.Blocks.Interfaces.RealInput STM_HCVLaM_degC(start=60) annotation(Placement(visible=true,transformation(origin={-240,112},extent={{-20,-20},{20,20}},rotation=0),iconTransformation(origin={-240,112},extent={{-20,-20},{20,20}},rotation=0)));
+  Modelica.Blocks.Interfaces.RealInput SFW_HCRLbM_l_per_min(start=6) annotation(Placement(visible=true,transformation(origin={-240,48},extent={{-20,-20},{20,20}},rotation=0),iconTransformation(origin={-240,48},extent={{-20,-20},{20,20}},rotation=0)));
+  Modelica.Blocks.Interfaces.RealInput T_ambient_degC(start=5) annotation(Placement(visible=true,transformation(origin={-240,12},extent={{-20,-20},{20,20}},rotation=0),iconTransformation(origin={-240,12},extent={{-20,-20},{20,20}},rotation=0)));
+
+  // PHiL outputs
+  Modelica.Blocks.Interfaces.RealOutput T_roomIs_degC annotation(Placement(visible=true,transformation(origin={230,114},extent={{-10,-10},{10,10}},rotation=0),iconTransformation(origin={230,114},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Interfaces.RealOutput T_cellarIs_degC annotation(Placement(visible=true,transformation(origin={230,82},extent={{-10,-10},{10,10}},rotation=0),iconTransformation(origin={230,82},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Interfaces.RealOutput T_roofIs_degC annotation(Placement(visible=true,transformation(origin={230,50},extent={{-10,-10},{10,10}},rotation=0),iconTransformation(origin={230,50},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Interfaces.RealOutput STM_HCRL_Set_degC annotation(Placement(visible=true,transformation(origin={230,26},extent={{-10,-10},{10,10}},rotation=0),iconTransformation(origin={230,26},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Interfaces.RealOutput SFW_HCRLbM_Set_l_per_min annotation(Placement(visible=true,transformation(origin={230,4},extent={{-10,-10},{10,10}},rotation=0),iconTransformation(origin={230,4},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Interfaces.RealOutput valve_cellar_opening annotation(Placement(visible=true,transformation(origin={230,-20},extent={{-10,-10},{10,10}},rotation=0),iconTransformation(origin={230,-20},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Interfaces.RealOutput valve_living_opening annotation(Placement(visible=true,transformation(origin={230,-44},extent={{-10,-10},{10,10}},rotation=0),iconTransformation(origin={230,-44},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Interfaces.RealOutput valve_roof_opening annotation(Placement(visible=true,transformation(origin={230,-68},extent={{-10,-10},{10,10}},rotation=0),iconTransformation(origin={230,-68},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Internal gains
+  Modelica.Blocks.Interfaces.RealInput nPersons_living_in(start=2) annotation(Placement(visible=true,transformation(origin={-240,-12},extent={{-20,-20},{20,20}},rotation=0),iconTransformation(origin={-240,-12},extent={{-20,-20},{20,20}},rotation=0)));
+  Modelica.Blocks.Interfaces.RealInput nPersons_cellar_in(start=0) annotation(Placement(visible=true,transformation(origin={-240,-50},extent={{-20,-20},{20,20}},rotation=0),iconTransformation(origin={-240,-50},extent={{-20,-20},{20,20}},rotation=0)));
+  Modelica.Blocks.Interfaces.RealInput nPersons_roof_in(start=0) annotation(Placement(visible=true,transformation(origin={-240,-92},extent={{-20,-20},{20,20}},rotation=0),iconTransformation(origin={-240,-92},extent={{-20,-20},{20,20}},rotation=0)));
+  Modelica.Blocks.Interfaces.RealInput P_appliances_living_W_in(start=200) annotation(Placement(visible=true,transformation(origin={308,-16},extent={{-20,-20},{20,20}},rotation=180),iconTransformation(origin={308,-16},extent={{-20,-20},{20,20}},rotation=180)));
+  Modelica.Blocks.Interfaces.RealInput P_appliances_cellar_W_in(start=50) annotation(Placement(visible=true,transformation(origin={310,14}, extent={{-20,-20},{20,20}},rotation=180),iconTransformation(origin={310,14}, extent={{-20,-20},{20,20}},rotation=180)));
+  Modelica.Blocks.Interfaces.RealInput P_appliances_roof_W_in(start=50) annotation(Placement(visible=true,transformation(origin={308,-52},extent={{-20,-20},{20,20}},rotation=180),iconTransformation(origin={308,-52},extent={{-20,-20},{20,20}},rotation=180)));
+
+  // Parameters
+  parameter Modelica.Units.SI.Area AZone_cellar=80;
+  parameter Modelica.Units.SI.Area AZone_living=100;
+  parameter Modelica.Units.SI.Area AZone_roof=60;
+  parameter Modelica.Units.SI.Length hZone_cellar=2.2;
+  parameter Modelica.Units.SI.Length hZone_living=2.5;
+  parameter Modelica.Units.SI.Length hZone_roof=2.3;
+  parameter Modelica.Units.SI.Temperature TZoneInit_cellar=288.15;
+  parameter Modelica.Units.SI.Temperature TZoneInit_living=294.15;
+  parameter Modelica.Units.SI.Temperature TZoneInit_roof=289.15;
+  parameter Modelica.Units.SI.Temperature TRef_cellar=288.15;
+  parameter Modelica.Units.SI.Temperature TRef_living=294.15;
+  parameter Modelica.Units.SI.Temperature TRef_roof=294.15;
+  parameter Boolean cellarHeat=true;
+  parameter Boolean roofHeat=true;
+  parameter Real k_PI=0.5;
+  parameter Modelica.Units.SI.Time Ti_PI=300;
+
+  // FIX: Use pressure boundaries (not mass flow source)
+  Modelica.Fluid.Sources.Boundary_pT supply(
+    redeclare package Medium=Medium,
+    use_p_in=false,
+    p=250000,
+    use_T_in=true,
+    T=333.15,
+    nPorts=1) annotation(Placement(visible=true,transformation(origin={-120,64},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Fluid.Sources.Boundary_pT return_sink(
+    redeclare package Medium=Medium,
+    p=150000,
+    T=313.15,
+    nPorts=1) annotation(Placement(visible=true,transformation(origin={-120,-50},extent={{-10,-10},{10,10}},rotation=180)));
+
+  Modelica.Fluid.Sensors.TemperatureTwoPort TReturn(redeclare package Medium=Medium) annotation(Placement(visible=true,transformation(origin={-70,-50},extent={{10,-10},{-10,10}},rotation=0)));
+
+  // Unit conversions
+  Modelica.Blocks.Math.Add toKelvin(k1=1,k2=1) annotation(Placement(visible=true,transformation(origin={-170,86},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Sources.Constant kelvinOffset(k=273.15) annotation(Placement(visible=true,transformation(origin={-200,66},extent={{-6,-6},{6,6}},rotation=0)));
+  Modelica.Blocks.Math.Add toCelsius_living(k1=1,k2=-1) annotation(Placement(visible=true,transformation(origin={190,114},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Math.Add toCelsius_cellar(k1=1,k2=-1) annotation(Placement(visible=true,transformation(origin={190,82},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Math.Add toCelsius_roof(k1=1,k2=-1) annotation(Placement(visible=true,transformation(origin={190,50},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Math.Add toCelsius_return(k1=1,k2=-1) annotation(Placement(visible=true,transformation(origin={190,26},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Sources.Constant kelvinOffset2(k=273.15) annotation(Placement(visible=true,transformation(origin={150,10},extent={{-6,-6},{6,6}},rotation=0)));
+  Modelica.Blocks.Math.Gain flowConvertOut(k=60000) annotation(Placement(visible=true,transformation(origin={190,4},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Building
+  CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis.ThreeZoneBuilding_new_FINAL building(
+    redeclare package Medium=Medium,
+    AZone_cellar=AZone_cellar,
+    AZone_living=AZone_living,
+    AZone_roof=AZone_roof,
+    hZone_cellar=hZone_cellar,
+    hZone_living=hZone_living,
+    hZone_roof=hZone_roof,
+    TZoneInit_cellar=TZoneInit_cellar,
+    TZoneInit_living=TZoneInit_living,
+    TZoneInit_roof=TZoneInit_roof,
+    TRef_cellar=TRef_cellar,
+    TRef_living=TRef_living,
+    TRef_roof=TRef_roof,
+    cellarHeat=cellarHeat,
+    roofHeat=roofHeat,
+    k_PI=k_PI,
+    Ti_PI=Ti_PI) annotation(Placement(visible=true,transformation(origin={-21,-19},
+                                                                               extent={{-39,-39},
+            {39,39}},                                                                                     rotation=0)));
+
+equation
+  // Fluid
+  connect(supply.ports[1],building.port_a) annotation(Line(points={{-110,64},{
+          -90,64},{-90,-19},{-99,-19}},                                                                color={0,127,255}));
+  connect(building.port_b,TReturn.port_a) annotation(Line(points={{-99,-58},{
+          -92,-58},{-92,-68},{-60,-68},{-60,-50}},                                     color={0,127,255}));
+  connect(TReturn.port_b,return_sink.ports[1]) annotation(Line(points={{-80,-50},
+          {-130,-50}},                                                                       color={0,127,255}));
+
+  // Inputs
+  connect(STM_HCVLaM_degC,toKelvin.u1) annotation(Line(points={{-240,112},{-190,112},{-190,92},{-182,92}},color={0,0,127}));
+  connect(kelvinOffset.y,toKelvin.u2) annotation(Line(points={{-193.4,66},{-190,66},{-190,80},{-182,80}},color={0,0,127}));
+  connect(toKelvin.y,supply.T_in) annotation(Line(points={{-159,86},{-140,86},{-140,68},{-132,68}},color={0,0,127}));
+
+  connect(nPersons_living_in,building.nPersons_living) annotation(Line(points={{-240,
+          -12},{-106.8,-12},{-106.8,35.6}},                                                                              color={0,0,127}));
+  connect(nPersons_cellar_in,building.nPersons_cellar) annotation(Line(points={{-240,
+          -50},{-136,-50},{-136,-14},{-100,-14},{-100,28},{-98,28},{-98,44},{
+          -106.8,44},{-106.8,51.2}},                                                                                     color={0,0,127}));
+  connect(nPersons_roof_in,building.nPersons_roof) annotation(Line(points={{-240,
+          -92},{-212,-92},{-212,20},{-106.8,20}},                                                                  color={0,0,127}));
+  connect(P_appliances_living_W_in,building.P_appliances_living_W) annotation(Line(points={{308,-16},
+          {274,-16},{274,36},{158,36},{158,35.6},{68.7,35.6}},                                                                   color={0,0,127}));
+  connect(P_appliances_cellar_W_in,building.P_appliances_cellar_W) annotation(Line(points={{310,14},
+          {276,14},{276,64},{246,64},{246,66},{68.7,66},{68.7,51.2}},                                                            color={0,0,127}));
+  connect(P_appliances_roof_W_in,building.P_appliances_roof_W) annotation(Line(points={{308,-52},
+          {246,-52},{246,-84},{210,-84},{210,-16},{154,-16},{154,0},{140,0},{
+          140,20},{68.7,20}},                                                                                              color={0,0,127}));
+
+  // Outputs
+  connect(building.TZone_living,toCelsius_living.u1) annotation(Line(points={{60.9,
+          -3.4},{60.9,36},{52,36},{52,120},{178,120}},                                                           color={0,0,127}));
+  connect(kelvinOffset2.y,toCelsius_living.u2) annotation(Line(points={{156.6,10},{170,10},{170,108},{178,108}},color={0,0,127}));
+  connect(toCelsius_living.y,T_roomIs_degC) annotation(Line(points={{201,114},{230,114}},color={0,0,127}));
+
+  connect(building.TZone_cellar,toCelsius_cellar.u1) annotation(Line(points={{60.9,
+          35.6},{60,35.6},{60,88},{178,88}},                                                                     color={0,0,127}));
+  connect(kelvinOffset2.y,toCelsius_cellar.u2) annotation(Line(points={{156.6,10},{170,10},{170,76},{178,76}},color={0,0,127}));
+  connect(toCelsius_cellar.y,T_cellarIs_degC) annotation(Line(points={{201,82},{230,82}},color={0,0,127}));
+
+  connect(building.TZone_roof,toCelsius_roof.u1) annotation(Line(points={{60.9,
+          -42.4},{164,-42.4},{164,56},{178,56}},                                                               color={0,0,127}));
+  connect(kelvinOffset2.y,toCelsius_roof.u2) annotation(Line(points={{156.6,10},{170,10},{170,44},{178,44}},color={0,0,127}));
+  connect(toCelsius_roof.y,T_roofIs_degC) annotation(Line(points={{201,50},{230,50}},color={0,0,127}));
+
+  connect(TReturn.T,toCelsius_return.u1) annotation(Line(points={{-70,-39},{-70,-30},{160,-30},{160,32},{178,32}},color={0,0,127}));
+  connect(kelvinOffset2.y,toCelsius_return.u2) annotation(Line(points={{156.6,10},{170,10},{170,20},{178,20}},color={0,0,127}));
+  connect(toCelsius_return.y,STM_HCRL_Set_degC) annotation(Line(points={{201,26},{230,26}},color={0,0,127}));
+
+  connect(building.qvRef,flowConvertOut.u) annotation(Line(points={{60.9,-58},{
+          60.9,-32},{168,-32},{168,4},{178,4}},                                                        color={0,0,127}));
+  connect(flowConvertOut.y,SFW_HCRLbM_Set_l_per_min) annotation(Line(points={{201,4},{230,4}},color={0,0,127}));
+
+  connect(building.valve_cellar_opening,valve_cellar_opening) annotation(Line(points={{60.9,20},
+          {60,20},{60,12},{138,12},{138,-2},{158,-2},{158,-4},{174,-4},{174,-14},
+          {230,-14},{230,-20}},                                                                                             color={0,0,127}));
+  connect(building.valve_living_opening,valve_living_opening) annotation(Line(points={{60.9,
+          -19},{60.9,-20},{214,-20},{214,-44},{230,-44}},                                                                 color={0,0,127}));
+  connect(building.valve_roof_opening,valve_roof_opening) annotation(Line(points={{60.9,
+          -73.6},{214,-73.6},{214,-68},{230,-68}},                                                                        color={0,0,127}));
+
+  annotation(experiment(StartTime=0,StopTime=259200,Interval=60,Tolerance=1e-06));
+end ThreeZoneBuilding_PHiL_new_FINAL;

@@ -1,0 +1,559 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model ThreeZoneBuilding_Updated
+  "Three-zone heated building with PI-controlled valves and pressure source - Version 2.0"
+
+  // ============================================================================
+  // MEDIUM AND SYSTEM
+  // ============================================================================
+  inner Modelica.Fluid.System system
+    annotation (Placement(transformation(extent={{-180,160},{-160,180}})));
+
+  replaceable package Medium = IBPSA.Media.Water
+    constrainedby Modelica.Media.Interfaces.PartialMedium
+    annotation (choicesAllMatching=true);
+
+  // ============================================================================
+  // EXTERNAL CONNECTORS
+  // ============================================================================
+  Modelica.Fluid.Interfaces.FluidPort_a port_a(redeclare package Medium = Medium)
+    "Supply water inlet from heating source"
+    annotation (Placement(transformation(extent={{-210,-10},{-190,10}}),
+        iconTransformation(extent={{-210,90},{-190,110}})));
+
+  Modelica.Fluid.Interfaces.FluidPort_b port_b(redeclare package Medium = Medium)
+    "Return water outlet to heating source"
+    annotation (Placement(transformation(extent={{-210,-110},{-190,-90}}),
+        iconTransformation(extent={{-210,-60},{-190,-40}})));
+
+  Modelica.Blocks.Interfaces.RealOutput qvRef(unit="m3/s", displayUnit="l/min")
+    "Total demanded volume flow rate"
+    annotation (Placement(transformation(extent={{200,-110},{220,-90}})));
+
+  Modelica.Blocks.Interfaces.RealOutput TZone_cellar(unit="K", displayUnit="degC")
+    "Cellar zone temperature"
+    annotation (Placement(transformation(extent={{200,130},{220,150}})));
+
+  Modelica.Blocks.Interfaces.RealOutput TZone_living(unit="K", displayUnit="degC")
+    "Living zone temperature"
+    annotation (Placement(transformation(extent={{200,30},{220,50}})));
+
+  Modelica.Blocks.Interfaces.RealOutput TZone_roof(unit="K", displayUnit="degC")
+    "Roof zone temperature"
+    annotation (Placement(transformation(extent={{200,-70},{220,-50}})));
+
+  // ============================================================================
+  // PARAMETERS
+  // ============================================================================
+  // Building parameters
+  parameter Modelica.Units.SI.Area AZone_cellar = 80 "Cellar floor area [m²]";
+  parameter Modelica.Units.SI.Area AZone_living = 100 "Living zone floor area [m²]";
+  parameter Modelica.Units.SI.Area AZone_roof = 60 "Roof zone floor area [m²]";
+
+  parameter Modelica.Units.SI.Length hZone_cellar = 2.2 "Cellar height [m]";
+  parameter Modelica.Units.SI.Length hZone_living = 2.5 "Living zone height [m]";
+  parameter Modelica.Units.SI.Length hZone_roof = 2.3 "Roof zone height [m]";
+
+  // Temperature setpoints
+  parameter Modelica.Units.SI.Temperature TRef_cellar = 288.15 "Cellar setpoint (15°C)";
+  parameter Modelica.Units.SI.Temperature TRef_living = 293.15 "Living zone setpoint (20°C)";
+  parameter Modelica.Units.SI.Temperature TRef_roof = 293.15 "Roof setpoint (20°C)";
+
+  // Initial temperatures
+  parameter Modelica.Units.SI.Temperature TZoneInit_cellar = 283.15 "Cellar initial temp (10°C)";
+  parameter Modelica.Units.SI.Temperature TZoneInit_living = 288.15 "Living initial temp (15°C)";
+  parameter Modelica.Units.SI.Temperature TZoneInit_roof = 285.15 "Roof initial temp (12°C)";
+
+  // Outdoor temperature
+  parameter Modelica.Units.SI.Temperature TOutdoor = 278.15 "Outdoor temperature (5°C)";
+
+  // Heating control
+  parameter Boolean cellarHeat = true "If true, cellar is heated";
+  parameter Boolean roofHeat = true "If true, roof is heated";
+
+  // Valve parameters
+  parameter Real Kv_valve = 10 "Valve flow coefficient [m3/h at 1 bar]";
+
+  // PI Controller parameters (NEW - Requirement 1)
+  parameter Real k_PI = 0.5 "Proportional gain for PI controllers";
+  parameter Modelica.Units.SI.Time Ti_PI = 300 "Integral time constant [s]";
+  parameter Real valveMin = 0.0 "Minimum valve opening";
+  parameter Real valveMax = 1.0 "Maximum valve opening";
+
+  // ============================================================================
+  // REQUIREMENT 2: SOURCE BOUNDARY CONDITION FOR SYSTEM PRESSURE
+  // ============================================================================
+  // This provides a pressure reference at the supply side so valves can operate properly
+  // The pressure source is placed right after port_a
+
+  Modelica.Fluid.Sources.Boundary_pT pressureSource(
+    redeclare package Medium = Medium,
+    use_p_in = false,
+    p = 300000,  // 3 bar supply pressure
+    T = 333.15,  // This temperature won't be used as we're taking flow from port_a
+    nPorts = 1)
+    "Pressure source to provide system pressure for valve operation"
+    annotation (Placement(transformation(extent={{-190,20},{-170,40}})));
+
+  // ============================================================================
+  // SUPPLY FLOW MEASUREMENT AND DISTRIBUTION
+  // ============================================================================
+
+  // Flow sensor at inlet
+  Modelica.Fluid.Sensors.VolumeFlowRate qvMedium(redeclare package Medium = Medium)
+    "Measure total supply flow"
+    annotation (Placement(transformation(extent={{-180,-10},{-160,10}})));
+
+  // Temperature sensor at inlet
+  Modelica.Fluid.Sensors.TemperatureTwoPort TMedium(redeclare package Medium = Medium)
+    "Measure supply temperature"
+    annotation (Placement(transformation(extent={{-150,-10},{-130,10}})));
+
+  // Main distribution junction (splits to cellar vs living+roof)
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeMain(
+    redeclare package Medium = Medium)
+    "Main junction: splits flow to cellar branch and living/roof branch"
+    annotation (Placement(transformation(extent={{-120,-10},{-100,10}})));
+
+  // Secondary junction (splits living+roof flow)
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeLivingRoof(
+    redeclare package Medium = Medium)
+    "Secondary junction: splits flow to living zone and roof"
+    annotation (Placement(transformation(extent={{-80,-60},{-60,-40}})));
+
+  // ============================================================================
+  // FLOW CONTROL VALVES (using ValveLinear for simplicity)
+  // ============================================================================
+
+  // Cellar valve
+  Modelica.Fluid.Valves.ValveLinear valve_cellar(
+    redeclare package Medium = Medium,
+    dp_nominal = 10000,
+    m_flow_nominal = 0.05)
+    "Cellar flow control valve"
+    annotation (Placement(transformation(extent={{-60,90},{-40,110}})));
+
+  // Living zone valve
+  Modelica.Fluid.Valves.ValveLinear valve_living(
+    redeclare package Medium = Medium,
+    dp_nominal = 10000,
+    m_flow_nominal = 0.05)
+    "Living zone flow control valve"
+    annotation (Placement(transformation(extent={{-60,-10},{-40,10}})));
+
+  // Roof valve
+  Modelica.Fluid.Valves.ValveLinear valve_roof(
+    redeclare package Medium = Medium,
+    dp_nominal = 10000,
+    m_flow_nominal = 0.05)
+    "Roof flow control valve"
+    annotation (Placement(transformation(extent={{-60,-110},{-40,-90}})));
+
+  // ============================================================================
+  // REQUIREMENT 1: PI CONTROLLERS FOR VALVE CONTROL
+  // ============================================================================
+  // These PI controllers adjust valve openings based on temperature error
+  // This makes flow rates variable instead of constant
+
+  Modelica.Blocks.Continuous.LimPID PI_cellar(
+    controllerType = Modelica.Blocks.Types.SimpleController.PI,
+    k = k_PI,
+    Ti = Ti_PI,
+    yMax = if cellarHeat then valveMax else 0,
+    yMin = valveMin,
+    initType = Modelica.Blocks.Types.Init.InitialOutput,
+    y_start = if cellarHeat then 0.3 else 0)
+    "PI controller for cellar valve"
+    annotation (Placement(transformation(extent={{-130,120},{-110,140}})));
+
+  Modelica.Blocks.Continuous.LimPID PI_living(
+    controllerType = Modelica.Blocks.Types.SimpleController.PI,
+    k = k_PI,
+    Ti = Ti_PI,
+    yMax = valveMax,
+    yMin = valveMin,
+    initType = Modelica.Blocks.Types.Init.InitialOutput,
+    y_start = 0.5)
+    "PI controller for living zone valve"
+    annotation (Placement(transformation(extent={{-130,20},{-110,40}})));
+
+  Modelica.Blocks.Continuous.LimPID PI_roof(
+    controllerType = Modelica.Blocks.Types.SimpleController.PI,
+    k = k_PI,
+    Ti = Ti_PI,
+    yMax = if roofHeat then valveMax else 0,
+    yMin = valveMin,
+    initType = Modelica.Blocks.Types.Init.InitialOutput,
+    y_start = if roofHeat then 0.3 else 0)
+    "PI controller for roof valve"
+    annotation (Placement(transformation(extent={{-130,-80},{-110,-60}})));
+
+  // ============================================================================
+  // RETURN FLOW MERGING
+  // ============================================================================
+
+  // Living+Roof merge junction
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeMergeLivingRoof(
+    redeclare package Medium = Medium)
+    "Merge living and roof return flows"
+    annotation (Placement(transformation(extent={{80,-60},{100,-40}})));
+
+  // Main merge junction
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeMergeMain(
+    redeclare package Medium = Medium)
+    "Merge cellar and living/roof return flows"
+    annotation (Placement(transformation(extent={{120,-110},{140,-90}})));
+
+  // Return temperature sensor
+  Modelica.Fluid.Sensors.TemperatureTwoPort TReturn(redeclare package Medium = Medium)
+    "Measure return temperature"
+    annotation (Placement(transformation(extent={{-150,-110},{-170,-90}})));
+
+  // ============================================================================
+  // HYDRONIC SYSTEMS (with RadiatorEN442_2)
+  // ============================================================================
+
+  HydronicSystem.SystemWithZoneAndHydronics_Updated cellar_hydSys(
+    redeclare package Medium = Medium)
+    "Cellar hydronic system with EN442 radiator"
+    annotation (Placement(transformation(extent={{-20,90},{20,130}})));
+
+  HydronicSystem.SystemWithZoneAndHydronics_Updated living_hydSys(
+    redeclare package Medium = Medium)
+    "Living zone hydronic system with EN442 radiator"
+    annotation (Placement(transformation(extent={{-20,-10},{20,30}})));
+
+  HydronicSystem.SystemWithZoneAndHydronics_Updated roof_hydSys(
+    redeclare package Medium = Medium)
+    "Roof hydronic system with EN442 radiator"
+    annotation (Placement(transformation(extent={{-20,-110},{20,-70}})));
+
+  // ============================================================================
+  // HEATED ZONES
+  // ============================================================================
+
+  BuildingSystem.Building.HeatedZone cellar_zone(
+    ZoneIndex = 1,
+    NumberZones = 3,
+    AZone = AZone_cellar,
+    hZone = hZone_cellar,
+    TZoneInit = TZoneInit_cellar,
+    infiltrationRate = 0.3,
+    occupancyLoad = 50,
+    applianceLoad = 50)
+    "Cellar heated zone"
+    annotation (Placement(transformation(extent={{60,90},{100,130}})));
+
+  BuildingSystem.Building.HeatedZone living_zone(
+    ZoneIndex = 2,
+    NumberZones = 3,
+    AZone = AZone_living,
+    hZone = hZone_living,
+    TZoneInit = TZoneInit_living,
+    infiltrationRate = 0.5,
+    occupancyLoad = 200,
+    applianceLoad = 150)
+    "Living zone (main heated space)"
+    annotation (Placement(transformation(extent={{60,-10},{100,30}})));
+
+  BuildingSystem.Building.HeatedZone roof_zone(
+    ZoneIndex = 3,
+    NumberZones = 3,
+    AZone = AZone_roof,
+    hZone = hZone_roof,
+    TZoneInit = TZoneInit_roof,
+    infiltrationRate = 0.4,
+    occupancyLoad = 100,
+    applianceLoad = 50)
+    "Roof zone"
+    annotation (Placement(transformation(extent={{60,-110},{100,-70}})));
+
+  // ============================================================================
+  // REFERENCE TEMPERATURE SETPOINTS (for PI controllers)
+  // ============================================================================
+
+  Modelica.Blocks.Sources.Constant TRefConst_cellar(k=TRef_cellar)
+    "Cellar temperature setpoint"
+    annotation (Placement(transformation(extent={{-170,140},{-150,160}})));
+
+  Modelica.Blocks.Sources.Constant TRefConst_living(k=TRef_living)
+    "Living zone temperature setpoint"
+    annotation (Placement(transformation(extent={{-170,40},{-150,60}})));
+
+  Modelica.Blocks.Sources.Constant TRefConst_roof(k=TRef_roof)
+    "Roof temperature setpoint"
+    annotation (Placement(transformation(extent={{-170,-60},{-150,-40}})));
+
+  // ============================================================================
+  // WINDOW SHADING (constant zero = no shading)
+  // ============================================================================
+
+  Modelica.Blocks.Sources.Constant WindowShadingConst_cellar[3](each k=0)
+    annotation (Placement(transformation(extent={{40,140},{60,160}})));
+  Modelica.Blocks.Sources.Constant WindowShadingConst_living[3](each k=0)
+    annotation (Placement(transformation(extent={{40,40},{60,60}})));
+  Modelica.Blocks.Sources.Constant WindowShadingConst_roof[3](each k=0)
+    annotation (Placement(transformation(extent={{40,-60},{60,-40}})));
+
+  // ============================================================================
+  // VOLUME FLOW SUM
+  // ============================================================================
+
+  Modelica.Blocks.Math.Add3 qvSum
+    "Sum of all zone volume flow demands"
+    annotation (Placement(transformation(extent={{160,-110},{180,-90}})));
+
+  // Volume flow from each valve (approximated from opening)
+  Modelica.Blocks.Math.Gain qv_cellar_approx(k=0.001)
+    annotation (Placement(transformation(extent={{120,120},{140,140}})));
+  Modelica.Blocks.Math.Gain qv_living_approx(k=0.001)
+    annotation (Placement(transformation(extent={{120,20},{140,40}})));
+  Modelica.Blocks.Math.Gain qv_roof_approx(k=0.001)
+    annotation (Placement(transformation(extent={{120,-80},{140,-60}})));
+
+  // ============================================================================
+  // INTERNAL GAINS INPUTS (Hidden from icon - accessed via equations)
+  // ============================================================================
+  Modelica.Blocks.Interfaces.RealInput nPersons_cellar(start=0)
+    "Number of persons in cellar"
+    annotation (Placement(
+      transformation(extent={{-230,160},{-190,200}}),
+      iconTransformation(extent={{-380,180},{-360,200}})));
+  Modelica.Blocks.Interfaces.RealInput nPersons_living(start=0)
+    "Number of persons in living zone"
+    annotation (Placement(
+      transformation(extent={{-230,120},{-190,160}}),
+      iconTransformation(extent={{-380,140},{-360,160}})));
+  Modelica.Blocks.Interfaces.RealInput nPersons_roof(start=0)
+    "Number of persons in roof zone"
+    annotation (Placement(
+      transformation(extent={{-230,80},{-190,120}}),
+      iconTransformation(extent={{-380,100},{-360,120}})));
+
+  Modelica.Blocks.Interfaces.RealInput P_appliances_cellar_W(start=50)
+    "Cellar appliance power [W]"
+    annotation (Placement(
+      transformation(extent={{210,160},{250,200}}),
+      iconTransformation(extent={{360,180},{380,200}})));
+  Modelica.Blocks.Interfaces.RealInput P_appliances_living_W(start=200)
+    "Living zone appliance power [W]"
+    annotation (Placement(
+      transformation(extent={{210,120},{250,160}}),
+      iconTransformation(extent={{360,140},{380,160}})));
+  Modelica.Blocks.Interfaces.RealInput P_appliances_roof_W(start=50)
+    "Roof zone appliance power [W]"
+    annotation (Placement(
+      transformation(extent={{210,80},{250,120}}),
+      iconTransformation(extent={{360,100},{380,120}})));
+
+equation
+  // ============================================================================
+  // FLUID CONNECTIONS - SUPPLY SIDE
+  // ============================================================================
+
+  // Port_a → flow sensor → temperature sensor → main tee
+  connect(port_a, qvMedium.port_a);
+  connect(qvMedium.port_b, TMedium.port_a);
+  connect(TMedium.port_b, teeMain.port_1);
+
+  // Main tee splits: port_2 to cellar, port_3 to living/roof
+  connect(teeMain.port_2, valve_cellar.port_a);
+  connect(teeMain.port_3, teeLivingRoof.port_1);
+
+  // Secondary tee splits: port_2 to living, port_3 to roof
+  connect(teeLivingRoof.port_2, valve_living.port_a);
+  connect(teeLivingRoof.port_3, valve_roof.port_a);
+
+  // Valves to hydronic systems
+  connect(valve_cellar.port_b, cellar_hydSys.port_a);
+  connect(valve_living.port_b, living_hydSys.port_a);
+  connect(valve_roof.port_b, roof_hydSys.port_a);
+
+  // ============================================================================
+  // FLUID CONNECTIONS - RETURN SIDE
+  // ============================================================================
+
+  // Hydronic systems to merge junctions
+  connect(cellar_hydSys.port_b, teeMergeMain.port_2);
+  connect(living_hydSys.port_b, teeMergeLivingRoof.port_2);
+  connect(roof_hydSys.port_b, teeMergeLivingRoof.port_3);
+
+  // Merge junctions together
+  connect(teeMergeLivingRoof.port_1, teeMergeMain.port_3);
+
+  // Main merge to return sensor to port_b
+  connect(teeMergeMain.port_1, TReturn.port_a);
+  connect(TReturn.port_b, port_b);
+
+  // ============================================================================
+  // THERMAL CONNECTIONS - HYDRONIC TO ZONES
+  // ============================================================================
+
+  connect(cellar_hydSys.port_zone, cellar_zone.heatPort);
+  connect(living_hydSys.port_zone, living_zone.heatPort);
+  connect(roof_hydSys.port_zone, roof_zone.heatPort);
+
+  // ============================================================================
+  // PI CONTROLLER CONNECTIONS (NEW - Requirement 1)
+  // ============================================================================
+
+  // Cellar PI: setpoint input, measurement input, control output to valve
+  connect(TRefConst_cellar.y, PI_cellar.u_s);
+  connect(cellar_zone.TZone, PI_cellar.u_m);
+  connect(PI_cellar.y, valve_cellar.opening);
+
+  // Living PI: setpoint input, measurement input, control output to valve
+  connect(TRefConst_living.y, PI_living.u_s);
+  connect(living_zone.TZone, PI_living.u_m);
+  connect(PI_living.y, valve_living.opening);
+
+  // Roof PI: setpoint input, measurement input, control output to valve
+  connect(TRefConst_roof.y, PI_roof.u_s);
+  connect(roof_zone.TZone, PI_roof.u_m);
+  connect(PI_roof.y, valve_roof.opening);
+
+  // ============================================================================
+  // ZONE INPUTS
+  // ============================================================================
+
+  // Temperature reference and shading to zones
+  connect(TRefConst_cellar.y, cellar_zone.TRef);
+  connect(TRefConst_living.y, living_zone.TRef);
+  connect(TRefConst_roof.y, roof_zone.TRef);
+
+  connect(WindowShadingConst_cellar.y, cellar_zone.WindowShading);
+  connect(WindowShadingConst_living.y, living_zone.WindowShading);
+  connect(WindowShadingConst_roof.y, roof_zone.WindowShading);
+
+  // Internal gains
+  connect(nPersons_cellar, cellar_zone.nPersons);
+  connect(nPersons_living, living_zone.nPersons);
+  connect(nPersons_roof, roof_zone.nPersons);
+
+  connect(P_appliances_cellar_W, cellar_zone.P_appliances_W);
+  connect(P_appliances_living_W, living_zone.P_appliances_W);
+  connect(P_appliances_roof_W, roof_zone.P_appliances_W);
+
+  // ============================================================================
+  // OUTPUT CONNECTIONS
+  // ============================================================================
+
+  connect(cellar_zone.TZone, TZone_cellar);
+  connect(living_zone.TZone, TZone_living);
+  connect(roof_zone.TZone, TZone_roof);
+
+  // Volume flow approximation and summation
+  connect(PI_cellar.y, qv_cellar_approx.u);
+  connect(PI_living.y, qv_living_approx.u);
+  connect(PI_roof.y, qv_roof_approx.u);
+
+  connect(qv_cellar_approx.y, qvSum.u1);
+  connect(qv_living_approx.y, qvSum.u2);
+  connect(qv_roof_approx.y, qvSum.u3);
+  connect(qvSum.y, qvRef);
+
+  annotation (
+    Icon(coordinateSystem(preserveAspectRatio=false, extent={{-200,-120},{200,180}}),
+         graphics={
+        Rectangle(
+          extent={{-200,-120},{200,180}},
+          lineColor={0,0,0},
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-160,-80},{160,140}},
+          lineColor={0,0,0},
+          fillColor={230,230,230},
+          fillPattern=FillPattern.Solid),
+        Polygon(
+          points={{-180,140},{0,180},{180,140},{-180,140}},
+          lineColor={101,67,33},
+          fillColor={178,34,34},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{-180,200},{180,185}},
+          textColor={0,0,255},
+          textString="%name"),
+        Rectangle(
+          extent={{-140,-80},{140,-100}},
+          lineColor={0,0,0},
+          fillColor={169,169,169},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{-120,-85},{120,-95}},
+          textColor={255,255,255},
+          textString="Cellar"),
+        Rectangle(
+          extent={{-140,-60},{140,120}},
+          lineColor={0,0,0},
+          fillColor={255,250,205},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{-80,40},{80,0}},
+          textColor={0,0,0},
+          textString="Living Zone"),
+        Polygon(
+          points={{-120,130},{0,160},{120,130},{-120,130}},
+          lineColor={0,0,0},
+          fillColor={255,218,185},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{-60,145},{60,135}},
+          textColor={0,0,0},
+          textString="Roof"),
+        Ellipse(
+          extent={{-190,105},{-180,95}},
+          lineColor={238,46,47},
+          fillColor={238,46,47},
+          fillPattern=FillPattern.Solid),
+        Ellipse(
+          extent={{-190,-45},{-180,-55}},
+          lineColor={28,108,200},
+          fillColor={28,108,200},
+          fillPattern=FillPattern.Solid),
+        Line(points={{-185,100},{-160,100},{-160,80}}, color={238,46,47}, thickness=0.5),
+        Line(points={{-185,-50},{-160,-50},{-160,-80}}, color={28,108,200}, thickness=0.5),
+        Text(
+          extent={{-198,125},{-162,85}},
+          textColor={238,46,47},
+          textString="Supply"),
+        Text(
+          extent={{-198,-25},{-162,-65}},
+          textColor={28,108,200},
+          textString="Return"),
+        Text(
+          extent={{-180,-105},{180,-120}},
+          textColor={0,100,0},
+          textString="With PI Control & Radiators")}),
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-200,-120},{200,180}})),
+    Documentation(info="<html>
+<h4>ThreeZoneBuilding_Updated - Version 2.0</h4>
+<p>Three-zone building model with PI-controlled valves and EN442-2 radiators.</p>
+
+<h5>NEW FEATURES:</h5>
+<ul>
+<li><b>Requirement 1:</b> PI Controllers for each valve - Variable flow based on temperature error</li>
+<li><b>Requirement 2:</b> Pressure source at supply (3 bar) for proper valve operation</li>
+<li><b>Requirement 3:</b> EN442-2 compliant radiators with convective/radiative heat transfer</li>
+</ul>
+
+<h5>PI Controller Parameters:</h5>
+<ul>
+<li><b>k_PI:</b> Proportional gain (default 0.5)</li>
+<li><b>Ti_PI:</b> Integral time constant (default 300 s)</li>
+<li><b>valveMin/Max:</b> Valve opening limits (0-1)</li>
+</ul>
+
+<h5>System Pressure:</h5>
+<p>A 3 bar pressure source is provided at the supply side to ensure proper differential 
+pressure across valves for flow control.</p>
+
+<h5>Flow Characteristics:</h5>
+<p>Unlike previous constant flow version, flow rates now vary dynamically based on:
+<ul>
+<li>Temperature error (setpoint - actual)</li>
+<li>PI controller action</li>
+<li>Valve characteristics and system pressure</li>
+</ul>
+</p>
+</html>"));
+end ThreeZoneBuilding_Updated;

@@ -1,0 +1,441 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model ThreeZoneBuilding_PHiL
+  "Three-zone heated building with PHiL interface for CoSES lab"
+
+  // ============================================================================
+  // MEDIUM AND SYSTEM
+  // ============================================================================
+  inner Modelica.Fluid.System system
+    annotation (Placement(transformation(extent={{-180,160},{-160,180}})));
+
+  replaceable package Medium = Modelica.Media.Water.StandardWater
+    annotation (choicesAllMatching=true);
+
+  // ============================================================================
+  // PHiL INPUT CONNECTORS (from CoSES Lab)
+  // ============================================================================
+
+  Modelica.Blocks.Interfaces.RealInput T_supply_degC(unit="degC")
+    "Supply water temperature from lab [°C] - connects to STM_HCVLaM_degC"
+    annotation (Placement(transformation(extent={{-240,60},{-200,100}}),
+        iconTransformation(extent={{-240,60},{-200,100}})));
+
+  Modelica.Blocks.Interfaces.RealInput m_flow_in(unit="kg/s")
+    "Mass flow rate from lab [kg/s] - computed from SFW_HCRLbM_l_per_min"
+    annotation (Placement(transformation(extent={{-240,20},{-200,60}}),
+        iconTransformation(extent={{-240,20},{-200,60}})));
+
+  Modelica.Blocks.Interfaces.RealInput T_ambient_degC(unit="degC")
+    "Outdoor ambient temperature from lab [°C]"
+    annotation (Placement(transformation(extent={{-240,-20},{-200,20}}),
+        iconTransformation(extent={{-240,-20},{-200,20}})));
+
+  // ============================================================================
+  // PHiL OUTPUT CONNECTORS (to CoSES Lab)
+  // ============================================================================
+
+  Modelica.Blocks.Interfaces.RealOutput T_room_degC(unit="degC")
+    "Living zone temperature to lab [°C] - connects to T_roomIs_degC"
+    annotation (Placement(transformation(extent={{200,60},{220,80}}),
+        iconTransformation(extent={{200,60},{220,80}})));
+
+  Modelica.Blocks.Interfaces.RealOutput T_return_degC(unit="degC")
+    "Return water temperature to lab [°C] - connects to STM_HCRL_degC"
+    annotation (Placement(transformation(extent={{200,20},{220,40}}),
+        iconTransformation(extent={{200,20},{220,40}})));
+
+  Modelica.Blocks.Interfaces.RealOutput TZone_cellar_degC(unit="degC")
+    "Cellar zone temperature [°C]"
+    annotation (Placement(transformation(extent={{200,-20},{220,0}})));
+
+  Modelica.Blocks.Interfaces.RealOutput TZone_roof_degC(unit="degC")
+    "Roof zone temperature [°C]"
+    annotation (Placement(transformation(extent={{200,-60},{220,-40}})));
+
+  Modelica.Blocks.Interfaces.RealOutput qvRef(unit="m3/s", displayUnit="l/min")
+    "Total demanded volume flow rate"
+    annotation (Placement(transformation(extent={{200,-100},{220,-80}})));
+
+  // ============================================================================
+  // PARAMETERS
+  // ============================================================================
+  // Building parameters
+  parameter Modelica.Units.SI.Area AZone_cellar = 80 "Cellar floor area [m²]";
+  parameter Modelica.Units.SI.Area AZone_living = 100 "Living zone floor area [m²]";
+  parameter Modelica.Units.SI.Area AZone_roof = 60 "Roof zone floor area [m²]";
+
+  parameter Modelica.Units.SI.Length hZone_cellar = 2.2 "Cellar height [m]";
+  parameter Modelica.Units.SI.Length hZone_living = 2.5 "Living zone height [m]";
+  parameter Modelica.Units.SI.Length hZone_roof = 2.3 "Roof zone height [m]";
+
+  // Temperature setpoints
+  parameter Modelica.Units.SI.Temperature TRef_cellar = 288.15 "Cellar setpoint (15°C)";
+  parameter Modelica.Units.SI.Temperature TRef_living = 293.15 "Living zone setpoint (20°C)";
+  parameter Modelica.Units.SI.Temperature TRef_roof = 293.15 "Roof setpoint (20°C)";
+
+  // Initial temperatures
+  parameter Modelica.Units.SI.Temperature TZoneInit_cellar = 283.15 "Cellar initial temp (10°C)";
+  parameter Modelica.Units.SI.Temperature TZoneInit_living = 288.15 "Living initial temp (15°C)";
+  parameter Modelica.Units.SI.Temperature TZoneInit_roof = 285.15 "Roof initial temp (12°C)";
+
+  // Heating control
+  parameter Boolean cellarHeat = true "If true, cellar is heated";
+  parameter Boolean roofHeat = true "If true, roof is heated";
+
+  // ============================================================================
+  // UNIT CONVERSION (Lab uses °C, Modelica uses K)
+  // ============================================================================
+
+  Modelica.Blocks.Math.Add T_supply_K(k2=273.15, k1=1)
+    "Convert supply temp from °C to K"
+    annotation (Placement(transformation(extent={{-180,70},{-160,90}})));
+
+  Modelica.Blocks.Sources.Constant offset_273(k=273.15)
+    "Kelvin offset"
+    annotation (Placement(transformation(extent={{-200,40},{-190,50}})));
+
+  // ============================================================================
+  // FLUID BOUNDARIES (controlled by PHiL inputs)
+  // ============================================================================
+
+  // Supply boundary (hot water source from lab)
+  Modelica.Fluid.Sources.Boundary_pT supply(
+    redeclare package Medium = Medium,
+    use_T_in = true,
+    p = 300000,
+    nPorts = 1)
+    "Hot water supply - temperature from PHiL lab"
+    annotation (Placement(transformation(extent={{-140,70},{-120,90}})));
+
+  // Return boundary (sink with controlled mass flow from lab)
+  Modelica.Fluid.Sources.MassFlowSource_T return_sink(
+    redeclare package Medium = Medium,
+    use_m_flow_in = true,
+    T = 303.15,
+    nPorts = 1)
+    "Return water sink - flow rate from PHiL lab"
+    annotation (Placement(transformation(extent={{10,-10},{-10,10}},
+        rotation=180,
+        origin={-130,-80})));
+
+  // ============================================================================
+  // FLOW MEASUREMENT AND DISTRIBUTION
+  // ============================================================================
+
+  Modelica.Fluid.Sensors.VolumeFlowRate qvMedium(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{-100,70},{-80,90}})));
+
+  Modelica.Fluid.Sensors.TemperatureTwoPort TMedium(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{-70,70},{-50,90}})));
+
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeMain(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{-40,70},{-20,90}})));
+
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeLivingRoof(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{-40,20},{-20,40}})));
+
+  // ============================================================================
+  // FLOW CONTROL VALVES
+  // ============================================================================
+
+  Modelica.Fluid.Valves.ValveLinear valve_cellar(
+    redeclare package Medium = Medium,
+    dp_nominal = 10000,
+    m_flow_nominal = 0.05)
+    annotation (Placement(transformation(extent={{0,110},{20,130}})));
+
+  Modelica.Fluid.Valves.ValveLinear valve_living(
+    redeclare package Medium = Medium,
+    dp_nominal = 10000,
+    m_flow_nominal = 0.05)
+    annotation (Placement(transformation(extent={{0,50},{20,70}})));
+
+  Modelica.Fluid.Valves.ValveLinear valve_roof(
+    redeclare package Medium = Medium,
+    dp_nominal = 10000,
+    m_flow_nominal = 0.05)
+    annotation (Placement(transformation(extent={{0,-10},{20,10}})));
+
+  // ============================================================================
+  // RETURN FLOW MERGING
+  // ============================================================================
+
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeMergeLivingRoof(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{100,20},{120,40}})));
+
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeMergeMain(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{130,-90},{150,-70}})));
+
+  Modelica.Fluid.Sensors.TemperatureTwoPort TReturn(redeclare package Medium = Medium)
+    "Return temperature sensor"
+    annotation (Placement(transformation(extent={{-80,-90},{-100,-70}})));
+
+  // ============================================================================
+  // HYDRONIC SYSTEMS
+  // ============================================================================
+
+  HydronicSystem.SystemWithZoneAndHydronics cellar_hydSys(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{40,110},{80,150}})));
+
+  HydronicSystem.SystemWithZoneAndHydronics living_hydSys(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{40,50},{80,90}})));
+
+  HydronicSystem.SystemWithZoneAndHydronics roof_hydSys(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{40,-10},{80,30}})));
+
+  // ============================================================================
+  // HEATED ZONES
+  // ============================================================================
+
+  BuildingSystem.Building.HeatedZone cellar_zone(
+    ZoneIndex = 1,
+    NumberZones = 3,
+    AZone = AZone_cellar,
+    hZone = hZone_cellar,
+    TZoneInit = TZoneInit_cellar,
+    infiltrationRate = 0.3,
+    occupancyLoad = 50,
+    applianceLoad = 50)
+    annotation (Placement(transformation(extent={{100,110},{140,150}})));
+
+  BuildingSystem.Building.HeatedZone living_zone(
+    ZoneIndex = 2,
+    NumberZones = 3,
+    AZone = AZone_living,
+    hZone = hZone_living,
+    TZoneInit = TZoneInit_living,
+    infiltrationRate = 0.5,
+    occupancyLoad = 200,
+    applianceLoad = 150)
+    annotation (Placement(transformation(extent={{100,50},{140,90}})));
+
+  BuildingSystem.Building.HeatedZone roof_zone(
+    ZoneIndex = 3,
+    NumberZones = 3,
+    AZone = AZone_roof,
+    hZone = hZone_roof,
+    TZoneInit = TZoneInit_roof,
+    infiltrationRate = 0.4,
+    occupancyLoad = 100,
+    applianceLoad = 50)
+    annotation (Placement(transformation(extent={{100,-10},{140,30}})));
+
+  // ============================================================================
+  // TEMPERATURE SETPOINTS
+  // ============================================================================
+
+  Modelica.Blocks.Sources.Constant TRefConst_cellar(k=TRef_cellar)
+    annotation (Placement(transformation(extent={{160,130},{180,150}})));
+  Modelica.Blocks.Sources.Constant TRefConst_living(k=TRef_living)
+    annotation (Placement(transformation(extent={{160,70},{180,90}})));
+  Modelica.Blocks.Sources.Constant TRefConst_roof(k=TRef_roof)
+    annotation (Placement(transformation(extent={{160,10},{180,30}})));
+
+  // ============================================================================
+  // WINDOW SHADING
+  // ============================================================================
+
+  Modelica.Blocks.Sources.Constant WindowShadingConst_cellar[3](each k=0)
+    annotation (Placement(transformation(extent={{70,140},{90,160}})));
+  Modelica.Blocks.Sources.Constant WindowShadingConst_living[3](each k=0)
+    annotation (Placement(transformation(extent={{70,80},{90,100}})));
+  Modelica.Blocks.Sources.Constant WindowShadingConst_roof[3](each k=0)
+    annotation (Placement(transformation(extent={{70,20},{90,40}})));
+
+  // ============================================================================
+  // VALVE OPENING CONTROLS
+  // ============================================================================
+
+  Modelica.Blocks.Sources.Constant valveOpen_cellar(k=if cellarHeat then 0.5 else 0)
+    annotation (Placement(transformation(extent={{-40,130},{-20,150}})));
+  Modelica.Blocks.Sources.Constant valveOpen_living(k=0.7)
+    annotation (Placement(transformation(extent={{-40,70},{-20,90}})));
+  Modelica.Blocks.Sources.Constant valveOpen_roof(k=if roofHeat then 0.5 else 0)
+    annotation (Placement(transformation(extent={{-40,10},{-20,30}})));
+
+  // ============================================================================
+  // VOLUME FLOW SUM
+  // ============================================================================
+
+  Modelica.Blocks.Math.Add3 qvSum
+    annotation (Placement(transformation(extent={{160,-100},{180,-80}})));
+  Modelica.Blocks.Math.Gain qv_cellar_approx(k=0.001)
+    annotation (Placement(transformation(extent={{120,130},{140,150}})));
+  Modelica.Blocks.Math.Gain qv_living_approx(k=0.001)
+    annotation (Placement(transformation(extent={{120,70},{140,90}})));
+  Modelica.Blocks.Math.Gain qv_roof_approx(k=0.001)
+    annotation (Placement(transformation(extent={{120,10},{140,30}})));
+
+equation
+  // ============================================================================
+  // PHiL INPUT CONVERSIONS
+  // ============================================================================
+
+  // Supply temperature: °C → K
+  connect(T_supply_degC, T_supply_K.u1)
+    annotation (Line(points={{-220,80},{-182,86}}, color={0,0,127}));
+  connect(offset_273.y, T_supply_K.u2)
+    annotation (Line(points={{-189.5,45},{-186,45},{-186,74},{-182,74}}, color={0,0,127}));
+  connect(T_supply_K.y, supply.T_in)
+    annotation (Line(points={{-159,80},{-150,80},{-150,84},{-142,84}}, color={0,0,127}));
+
+  // Mass flow rate (negative for sink)
+  connect(m_flow_in, return_sink.m_flow_in)
+    annotation (Line(points={{-220,40},{-160,40},{-160,-88},{-140,-88}}, color={0,0,127}));
+
+  // ============================================================================
+  // PHiL OUTPUT CONVERSIONS (K → °C)
+  // ============================================================================
+
+  // Living zone temperature output (main room for PHiL)
+  T_room_degC = living_zone.TZone - 273.15;
+
+  // Return water temperature
+  T_return_degC = TReturn.T - 273.15;
+
+  // Other zone temperatures
+  TZone_cellar_degC = cellar_zone.TZone - 273.15;
+  TZone_roof_degC = roof_zone.TZone - 273.15;
+
+  // ============================================================================
+  // SUPPLY PATH
+  // ============================================================================
+
+  connect(supply.ports[1], qvMedium.port_a)
+    annotation (Line(points={{-120,80},{-100,80}}, color={0,127,255}));
+  connect(qvMedium.port_b, TMedium.port_a)
+    annotation (Line(points={{-80,80},{-70,80}}, color={0,127,255}));
+  connect(TMedium.port_b, teeMain.port_1)
+    annotation (Line(points={{-50,80},{-40,80}}, color={0,127,255}));
+
+  // Main junction splits
+  connect(teeMain.port_2, valve_cellar.port_a)
+    annotation (Line(points={{-20,80},{-20,120},{0,120}}, color={0,127,255}));
+  connect(teeMain.port_3, teeLivingRoof.port_1)
+    annotation (Line(points={{-30,90},{-30,30},{-40,30}}, color={0,127,255}));
+
+  // Living/Roof junction splits
+  connect(teeLivingRoof.port_2, valve_living.port_a)
+    annotation (Line(points={{-20,30},{-20,60},{0,60}}, color={0,127,255}));
+  connect(teeLivingRoof.port_3, valve_roof.port_a)
+    annotation (Line(points={{-30,40},{-30,0},{0,0}}, color={0,127,255}));
+
+  // ============================================================================
+  // VALVE TO HYDRONIC SYSTEM
+  // ============================================================================
+
+  connect(valve_cellar.port_b, cellar_hydSys.port_a)
+    annotation (Line(points={{20,120},{30,120},{30,130},{41.2,130}}, color={0,127,255}));
+  connect(valve_living.port_b, living_hydSys.port_a)
+    annotation (Line(points={{20,60},{30,60},{30,70},{41.2,70}}, color={0,127,255}));
+  connect(valve_roof.port_b, roof_hydSys.port_a)
+    annotation (Line(points={{20,0},{30,0},{30,10},{41.2,10}}, color={0,127,255}));
+
+  // ============================================================================
+  // HYDRONIC TO ZONE HEAT PORTS
+  // ============================================================================
+
+  connect(cellar_hydSys.port_zone, cellar_zone.heatPort)
+    annotation (Line(points={{60,149},{60,160},{95,160},{95,138.2},{99.4,138.2}}, color={191,0,0}));
+  connect(living_hydSys.port_zone, living_zone.heatPort)
+    annotation (Line(points={{60,89},{60,100},{95,100},{95,78.2},{99.4,78.2}}, color={191,0,0}));
+  connect(roof_hydSys.port_zone, roof_zone.heatPort)
+    annotation (Line(points={{60,29},{60,40},{95,40},{95,18.2},{99.4,18.2}}, color={191,0,0}));
+
+  // ============================================================================
+  // RETURN PATH
+  // ============================================================================
+
+  connect(cellar_hydSys.port_b, teeMergeMain.port_1)
+    annotation (Line(points={{79,130},{90,130},{90,-80},{130,-80}}, color={0,127,255}));
+  connect(living_hydSys.port_b, teeMergeLivingRoof.port_1)
+    annotation (Line(points={{79,70},{90,70},{90,30},{100,30}}, color={0,127,255}));
+  connect(roof_hydSys.port_b, teeMergeLivingRoof.port_3)
+    annotation (Line(points={{79,10},{90,10},{90,40},{110,40}}, color={0,127,255}));
+
+  connect(teeMergeLivingRoof.port_2, teeMergeMain.port_3)
+    annotation (Line(points={{120,30},{140,30},{140,-70}}, color={0,127,255}));
+  connect(teeMergeMain.port_2, TReturn.port_a)
+    annotation (Line(points={{150,-80},{-80,-80}}, color={0,127,255}));
+  connect(TReturn.port_b, return_sink.ports[1])
+    annotation (Line(points={{-100,-80},{-120,-80}}, color={0,127,255}));
+
+  // ============================================================================
+  // ZONE CONTROLS
+  // ============================================================================
+
+  connect(TRefConst_cellar.y, cellar_zone.TZoneRef);
+  connect(TRefConst_living.y, living_zone.TZoneRef);
+  connect(TRefConst_roof.y, roof_zone.TZoneRef);
+
+  connect(WindowShadingConst_cellar[1:3].y, cellar_zone.WindowShading[1:3]);
+  connect(WindowShadingConst_living[1:3].y, living_zone.WindowShading[1:3]);
+  connect(WindowShadingConst_roof[1:3].y, roof_zone.WindowShading[1:3]);
+
+  // ============================================================================
+  // VALVE CONTROLS
+  // ============================================================================
+
+  connect(valveOpen_cellar.y, valve_cellar.opening)
+    annotation (Line(points={{-19,140},{10,140},{10,128}}, color={0,0,127}));
+  connect(valveOpen_living.y, valve_living.opening)
+    annotation (Line(points={{-19,80},{-10,80},{-10,68},{10,68}}, color={0,0,127}));
+  connect(valveOpen_roof.y, valve_roof.opening)
+    annotation (Line(points={{-19,20},{-10,20},{-10,8},{10,8}}, color={0,0,127}));
+
+  // ============================================================================
+  // VOLUME FLOW SUM
+  // ============================================================================
+
+  connect(valveOpen_cellar.y, qv_cellar_approx.u);
+  connect(valveOpen_living.y, qv_living_approx.u);
+  connect(valveOpen_roof.y, qv_roof_approx.u);
+
+  connect(qv_cellar_approx.y, qvSum.u1)
+    annotation (Line(points={{141,140},{150,140},{150,-82},{158,-82}}, color={0,0,127}));
+  connect(qv_living_approx.y, qvSum.u2)
+    annotation (Line(points={{141,80},{152,80},{152,-90},{158,-90}}, color={0,0,127}));
+  connect(qv_roof_approx.y, qvSum.u3)
+    annotation (Line(points={{141,20},{154,20},{154,-98},{158,-98}}, color={0,0,127}));
+  connect(qvSum.y, qvRef);
+
+  annotation (
+    Icon(coordinateSystem(preserveAspectRatio=false, extent={{-220,-120},{220,180}}),
+      graphics={
+        Rectangle(extent={{-200,-100},{200,160}}, lineColor={0,0,0}, fillColor={255,255,255}, fillPattern=FillPattern.Solid),
+        Rectangle(extent={{-180,60},{180,140}}, lineColor={0,0,0}, fillColor={255,200,200}, fillPattern=FillPattern.Solid),
+        Rectangle(extent={{-180,-20},{180,50}}, lineColor={0,0,0}, fillColor={255,255,200}, fillPattern=FillPattern.Solid),
+        Rectangle(extent={{-180,-80},{180,-30}}, lineColor={0,0,0}, fillColor={200,200,255}, fillPattern=FillPattern.Solid),
+        Text(extent={{-160,130},{160,70}}, textString="Roof", textColor={0,0,0}),
+        Text(extent={{-160,40},{160,-10}}, textString="Living (PHiL)", textColor={0,0,0}),
+        Text(extent={{-160,-40},{160,-70}}, textString="Cellar", textColor={0,0,0}),
+        Text(extent={{-200,180},{200,150}}, textString="%name", textColor={0,0,255}),
+        Text(extent={{-240,110},{-200,70}}, textString="T_sup", textColor={238,46,47}),
+        Text(extent={{-240,70},{-200,30}}, textString="m_flow", textColor={238,46,47}),
+        Text(extent={{200,90},{240,50}}, textString="T_room", textColor={28,108,200}),
+        Text(extent={{200,50},{240,10}}, textString="T_ret", textColor={28,108,200})}),
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-220,-120},{220,180}})),
+    experiment(StartTime=0, StopTime=172800, Interval=60, Tolerance=1e-06),
+    Documentation(info="<html>
+<h4>ThreeZoneBuilding_PHiL</h4>
+<p>Three-zone building model with PHiL interface for CoSES lab integration.</p>
+
+<h5>PHiL Inputs (from Lab):</h5>
+<ul>
+<li><b>T_supply_degC</b> - Supply water temperature [°C] from STM_HCVLaM_degC</li>
+<li><b>m_flow_in</b> - Mass flow rate [kg/s] computed from SFW_HCRLbM_l_per_min</li>
+<li><b>T_ambient_degC</b> - Outdoor temperature [°C] (optional)</li>
+</ul>
+
+<h5>PHiL Outputs (to Lab):</h5>
+<ul>
+<li><b>T_room_degC</b> - Living zone temperature [°C] to T_roomIs_degC</li>
+<li><b>T_return_degC</b> - Return water temperature [°C] to STM_HCRL_degC</li>
+<li><b>TZone_cellar_degC</b> - Cellar temperature [°C]</li>
+<li><b>TZone_roof_degC</b> - Roof temperature [°C]</li>
+</ul>
+
+<h5>Unit Conversions:</h5>
+<p>Lab uses °C, Modelica uses K. Conversions are handled internally.</p>
+</html>"));
+end ThreeZoneBuilding_PHiL;

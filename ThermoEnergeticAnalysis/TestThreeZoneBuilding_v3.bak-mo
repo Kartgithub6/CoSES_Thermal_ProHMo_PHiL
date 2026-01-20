@@ -1,0 +1,133 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model TestThreeZoneBuilding_v3
+  "Test model for ThreeZoneBuilding - clean version without replicators"
+
+  // NOTE: ThreeZoneBuilding already has 'inner system', don't redeclare here
+
+  replaceable package Medium = Modelica.Media.Water.StandardWater
+    annotation (choicesAllMatching=true);
+
+  // ============================================================================
+  // THE BUILDING (your working ThreeZoneBuilding)
+  // ============================================================================
+  ThreeZoneBuilding building(
+    redeclare package Medium = Medium,
+    // Zone areas
+    AZone_cellar = 80,
+    AZone_living = 100,
+    AZone_roof = 60,
+    // Zone heights
+    hZone_cellar = 2.2,
+    hZone_living = 2.5,
+    hZone_roof = 2.3,
+    // Temperature setpoints
+    TRef_cellar = 288.15,  // 15°C
+    TRef_living = 293.15,  // 20°C
+    TRef_roof = 293.15,    // 20°C
+    // Initial temperatures
+    TZoneInit_cellar = 283.15,  // 10°C
+    TZoneInit_living = 288.15,  // 15°C
+    TZoneInit_roof = 285.15,    // 12°C
+    // Outdoor temperature
+    TOutdoor = 278.15,  // 5°C
+    // Heating enabled
+    cellarHeat = true,
+    roofHeat = true)
+    annotation (Placement(transformation(extent={{-20,-40},{60,40}})));
+
+  // ============================================================================
+  // HEATING SOURCE (simulated boiler/heat pump supply)
+  // ============================================================================
+
+  // Supply boundary (hot water source at 60°C, 3 bar)
+  Modelica.Fluid.Sources.Boundary_pT supply(
+    redeclare package Medium = Medium,
+    use_T_in = true,
+    p = 300000,
+    nPorts = 1)
+    "Hot water supply from heating source"
+    annotation (Placement(transformation(extent={{-100,10},{-80,30}})));
+
+  // Return boundary (sink with controlled mass flow)
+  Modelica.Fluid.Sources.MassFlowSource_T return_sink(
+    redeclare package Medium = Medium,
+    use_m_flow_in = true,
+    T = 303.15,
+    nPorts = 1)
+    "Return water sink (creates flow through system)"
+    annotation (Placement(transformation(extent={{10,-10},{-10,10}},
+        rotation=180,
+        origin={-90,-30})));
+
+  // ============================================================================
+  // INPUT SIGNALS (constant for testing)
+  // ============================================================================
+
+  // Supply temperature (60°C = 333.15 K)
+  Modelica.Blocks.Sources.Constant supplyTemp(k=333.15)
+    "Supply water temperature (60°C)"
+    annotation (Placement(transformation(extent={{-140,30},{-120,50}})));
+
+  // Mass flow rate (negative for sink: -0.1 kg/s = 6 L/min)
+  Modelica.Blocks.Sources.Constant massFlowRate(k=-0.1)
+    "Total mass flow rate (0.1 kg/s = 6 L/min)"
+    annotation (Placement(transformation(extent={{-140,-50},{-120,-30}})));
+
+  // ============================================================================
+  // OUTPUT MONITORING (in degrees Celsius for plotting)
+  // ============================================================================
+
+  Real T_cellar_degC = building.TZone_cellar - 273.15 "Cellar temp [°C]";
+  Real T_living_degC = building.TZone_living - 273.15 "Living temp [°C]";
+  Real T_roof_degC = building.TZone_roof - 273.15 "Roof temp [°C]";
+
+equation
+  // ============================================================================
+  // SUPPLY CONNECTIONS
+  // ============================================================================
+
+  // Supply temperature input
+  connect(supplyTemp.y, supply.T_in)
+    annotation (Line(points={{-119,40},{-110,40},{-110,24},{-102,24}}, color={0,0,127}));
+
+  // Supply to building port_a
+  connect(supply.ports[1], building.port_a)
+    annotation (Line(points={{-80,20},{-20,20}}, color={0,127,255}));
+
+  // ============================================================================
+  // RETURN CONNECTIONS
+  // ============================================================================
+
+  // Mass flow rate input (negative for sink)
+  connect(massFlowRate.y, return_sink.m_flow_in)
+    annotation (Line(points={{-119,-40},{-110,-40},{-110,-38},{-100,-38}}, color={0,0,127}));
+
+  // Building port_b to return sink
+  connect(building.port_b, return_sink.ports[1])
+    annotation (Line(points={{-20,-11.1111},{-60,-11.1111},{-60,-30},{-80,-30}},
+                                                                       color={0,127,255}));
+
+  annotation (
+    experiment(
+      StartTime=0,
+      StopTime=259200,  // 3 days = 72 hours
+      Interval=60,
+      Tolerance=1e-06),
+    Documentation(info="<html>
+<h4>Test Model for ThreeZoneBuilding</h4>
+<p><b>Boundary Conditions:</b></p>
+<ul>
+<li>Supply: 60°C at 3 bar</li>
+<li>Flow: 0.1 kg/s (6 L/min)</li>
+<li>Outdoor: 5°C</li>
+</ul>
+<p><b>Expected Results (3 days):</b></p>
+<ul>
+<li>Cellar: 10°C → ~15°C</li>
+<li>Living: 15°C → ~20°C</li>
+<li>Roof: 12°C → ~20°C</li>
+</ul>
+<p><b>Plot:</b> T_cellar_degC, T_living_degC, T_roof_degC</p>
+</html>"),
+    Diagram(coordinateSystem(extent={{-160,-80},{100,80}})));
+end TestThreeZoneBuilding_v3;

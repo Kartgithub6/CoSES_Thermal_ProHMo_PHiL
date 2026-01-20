@@ -1,0 +1,147 @@
+within CoSES_Thermal_ProHMo_PHiL.BuildingSystem.Building;
+model TestHydronicZone_Enhanced_v2
+  "Enhanced test model v2 - with improved initial conditions and better thermal response"
+
+  inner Modelica.Fluid.System system;
+  replaceable package Medium = Modelica.Media.Water.StandardWater
+    annotation(Placement(transformation(extent={{-100,80},{-60,100}})));
+
+  // ============================================================================
+  // HYDRONIC SYSTEM
+  // ============================================================================
+  HydronicSystem.SystemWithZoneAndHydronics hydSys(
+    redeclare package Medium = Medium)
+    annotation(Placement(transformation(extent={{-40,-20},{0,20}})));
+
+  // Supply boundary - with variable temperature input
+  Modelica.Fluid.Sources.Boundary_pT supply(
+    redeclare package Medium = Medium,
+    use_T_in = true,
+    p = 300000,
+    nPorts = 1)
+    annotation(Placement(transformation(extent={{-100,-10},{-80,10}})));
+
+  // Return boundary with variable mass flow input
+  Modelica.Fluid.Sources.MassFlowSource_T ret(
+    redeclare package Medium = Medium,
+    use_m_flow_in = true,
+    T = 303.15,
+    nPorts = 1)
+    annotation(Placement(transformation(extent={{-10,-10},{10,10}},
+        rotation=90,
+        origin={10,-82})));
+
+  // ============================================================================
+  // HEATED ZONE - WITH IMPROVED PARAMETERS
+  // ============================================================================
+  HeatedZone_1 HeatedZone(
+    ZoneIndex   = 1,
+    NumberZones = 3,
+    AZone = 100,              // 100 m² floor area
+    hZone = 2.5,              // 2.5 m ceiling height
+    infiltrationRate = 0.3,   // REDUCED from 0.5 for better heating response
+    occupancyLoad = 200,      // 200 W from occupants
+    applianceLoad = 100,      // 100 W from appliances
+    TZoneInit = 288.15        // ADDED: Start at 15°C (not too cold)
+)   annotation (Placement(transformation(extent={{60,12},{80,32}})));
+
+  // ============================================================================
+  // INPUT SIGNALS
+  // ============================================================================
+
+  // --- SUPPLY TEMPERATURE (60°C constant for clear heating test) ---
+  Modelica.Blocks.Sources.Constant supplyTemp(k=333.15  // 60°C constant
+)   annotation (Placement(transformation(extent={{-140,20},{-120,40}})));
+
+  // --- MASS FLOW RATE ---
+  Modelica.Blocks.Sources.Constant massFlowRate(k=-0.08  // Increased to 0.08 kg/s (4.8 L/min)
+)   annotation (Placement(transformation(extent={{-60,-100},{-40,-80}})));
+
+  // --- ZONE REFERENCE TEMPERATURE (thermostat setpoint) ---
+  Modelica.Blocks.Sources.Constant TZoneRefConst(k=293.15  // 20°C
+)   annotation (Placement(transformation(extent={{-10,-10},{10,10}},
+        rotation=0,
+        origin={64,-12})));
+
+  // --- OUTDOOR TEMPERATURE (constant for simpler test) ---
+  Modelica.Blocks.Sources.Constant TOutdoor(k=278.15  // 5°C outdoor
+)   annotation (Placement(transformation(extent={{-60,60},{-40,80}})));
+
+  // Convert to array for 3 boundaries
+  Modelica.Blocks.Routing.Replicator replicator(nout=3)
+    annotation (Placement(transformation(extent={{-30,60},{-10,80}})));
+
+  // --- WINDOW SHADING ---
+  Modelica.Blocks.Sources.Constant WindowShadingConst[3](each k=0)
+    annotation (Placement(transformation(extent={{16,-22},{36,-2}})));
+
+  // ============================================================================
+  // OUTPUT MONITORING (in convenient units)
+  // ============================================================================
+  Modelica.Blocks.Interfaces.RealOutput T_zone_degC "Zone temperature in °C"
+    annotation (Placement(transformation(extent={{100,40},{120,60}})));
+  Modelica.Blocks.Interfaces.RealOutput Q_heating_kW "Heating power in kW"
+    annotation (Placement(transformation(extent={{100,10},{120,30}})));
+  Modelica.Blocks.Interfaces.RealOutput T_supply_degC "Supply temperature in °C"
+    annotation (Placement(transformation(extent={{100,-20},{120,0}})));
+  Modelica.Blocks.Interfaces.RealOutput T_outdoor_degC "Outdoor temperature in °C"
+    annotation (Placement(transformation(extent={{100,-50},{120,-30}})));
+
+equation
+  // Unit conversions for easy plotting
+  T_zone_degC = HeatedZone.TZone - 273.15;
+  Q_heating_kW = HeatedZone.HeatCoolLoad / 1000;
+  T_supply_degC = supplyTemp.y - 273.15;
+  T_outdoor_degC = TOutdoor.y - 273.15;
+
+  // ============================================================================
+  // CONNECTIONS
+  // ============================================================================
+
+  // Supply temperature input
+  connect(supplyTemp.y, supply.T_in)
+    annotation (Line(points={{-119,30},{-110,30},{-110,4},{-102,4}}, color={0,0,127}));
+
+  // Mass flow input
+  connect(massFlowRate.y, ret.m_flow_in)
+    annotation (Line(points={{-39,-90},{2,-90},{2,-92}}, color={0,0,127}));
+
+  // Water loop
+  connect(supply.ports[1], hydSys.port_a)
+    annotation (Line(points={{-80,0},{-37.6,0}}, color={0,127,255}));
+  connect(hydSys.port_b, ret.ports[1])
+    annotation (Line(points={{-2,0},{6,0},{6,-72},{10,-72}}, color={0,127,255}));
+
+  // Thermal connection to zone
+  connect(hydSys.port_zone, HeatedZone.heatPort)
+    annotation (Line(points={{-20,18},{-20,26.2},{59.4,26.2}}, color={191,0,0}));
+
+  // Zone inputs
+  connect(WindowShadingConst[1:3].y, HeatedZone.WindowShading[1:3])
+    annotation (Line(points={{37,-12},{50,-12},{50,12.1},{59.7,12.1}}, color={0,0,127}));
+  connect(TZoneRefConst.y, HeatedZone.TZoneRef)
+    annotation (Line(points={{75,-12},{86,-12},{86,26},{79.8,26}}, color={0,0,127}));
+
+  // Outdoor temperature
+  connect(TOutdoor.y, replicator.u)
+    annotation (Line(points={{-39,70},{-32,70}}, color={0,0,127}));
+
+  annotation (
+    experiment(
+      StartTime = 0,
+      StopTime = 172800,  // 2 days for better thermal response
+      Interval = 60,      // 1 minute intervals
+      Tolerance = 1e-6),
+    Documentation(info="<html>
+<h4>Enhanced Test Model v2</h4>
+<p>Changes from v1:</p>
+<ul>
+<li>Constant 60°C supply (instead of trapezoid) for clearer test</li>
+<li>Increased mass flow to 0.08 kg/s</li>
+<li>Reduced infiltration to 0.3 ACH</li>
+<li>Added TZoneInit = 15°C</li>
+<li>Extended simulation to 2 days</li>
+<li>Added T_outdoor_degC output</li>
+</ul>
+</html>"));
+end TestHydronicZone_Enhanced_v2;

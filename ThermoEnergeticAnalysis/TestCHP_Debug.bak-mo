@@ -1,0 +1,84 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model TestCHP_Debug
+  "Simple test to verify CHP physics - run this first!"
+
+  // ============================================================================
+  // THE CHP
+  // ============================================================================
+
+  SimpleCHP_v2 chp(
+    QHeat_nominal = 12500,
+    PElec_nominal = 5000,
+    tau = 60)
+    annotation(Placement(transformation(extent={{-20,-20},{20,20}})));
+
+  // ============================================================================
+  // INPUTS
+  // ============================================================================
+
+  Modelica.Blocks.Sources.BooleanConstant chpOn(k=true)
+    "CHP always ON"
+    annotation(Placement(transformation(extent={{-80,40},{-60,60}})));
+
+  Modelica.Blocks.Sources.Constant modulation(k=1.0)
+    "Full power (100%)"
+    annotation(Placement(transformation(extent={{-80,10},{-60,30}})));
+
+  Modelica.Blocks.Sources.Constant returnTemp(k=30)
+    "Return temperature 30°C"
+    annotation(Placement(transformation(extent={{-80,-20},{-60,0}})));
+
+  Modelica.Blocks.Sources.Constant flowRate(k=6)
+    "Flow rate 6 L/min"
+    annotation(Placement(transformation(extent={{-80,-50},{-60,-30}})));
+
+  // ============================================================================
+  // EXPECTED VALUES (for comparison)
+  // ============================================================================
+  // With 6 L/min = 0.1 kg/s, 12.5 kW, cp = 4180:
+  // deltaT = 12500 / (0.1 * 4180) = 29.9 K
+  // T_supply = 30 + 30 = 60°C
+
+  Real expected_deltaT = 12500 / (0.1 * 4180) "Should be ~30 K";
+  Real expected_T_supply = 30 + expected_deltaT "Should be ~60°C";
+
+  // ============================================================================
+  // ACTUAL VALUES
+  // ============================================================================
+
+  Real actual_T_supply = chp.TSupply_degC "Actual supply temp [°C]";
+  Real actual_deltaT = chp.debug_deltaT_K "Actual deltaT [K]";
+  Real actual_QHeat = chp.debug_QHeat_W "Actual heat [W]";
+  Real actual_m_flow = chp.debug_m_flow_kg_s "Actual mass flow [kg/s]";
+  Real actual_mod = chp.debug_ModActual "Actual modulation";
+
+equation
+  connect(chpOn.y, chp.CHPon);
+  connect(modulation.y, chp.Modulation);
+  connect(returnTemp.y, chp.TReturn_degC);
+  connect(flowRate.y, chp.qv_l_per_min);
+
+  annotation(
+    experiment(StopTime=600, Interval=1),
+    Documentation(info="<html>
+<h4>CHP Debug Test</h4>
+<p>Run this simple test for 10 minutes (600 seconds) to verify CHP physics.</p>
+
+<h5>Expected Results at Steady State:</h5>
+<table border='1'>
+<tr><th>Variable</th><th>Expected</th></tr>
+<tr><td>actual_m_flow</td><td>0.1 kg/s</td></tr>
+<tr><td>actual_mod</td><td>1.0</td></tr>
+<tr><td>actual_QHeat</td><td>12500 W</td></tr>
+<tr><td>actual_deltaT</td><td>~30 K</td></tr>
+<tr><td>actual_T_supply</td><td>~60°C</td></tr>
+</table>
+
+<h5>If Results Don't Match:</h5>
+<ul>
+<li>If m_flow is wrong: Check flow conversion (L/min to kg/s)</li>
+<li>If QHeat is wrong: Check modulation logic</li>
+<li>If deltaT is wrong: Check temperature calculation</li>
+</ul>
+</html>"));
+end TestCHP_Debug;

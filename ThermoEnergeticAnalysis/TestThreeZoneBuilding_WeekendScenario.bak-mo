@@ -1,0 +1,219 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model TestThreeZoneBuilding_WeekendScenario
+  "Weekend with guests - more activity but realistic"
+
+  inner Modelica.Fluid.System system annotation(Placement(visible=true,transformation(origin={-170,170},extent={{-10,-10},{10,10}},rotation=0)));
+
+  CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis.ThreeZoneBuilding_PHiL_new building(
+    k_PI=0.8,
+    Ti_PI=200,
+    cellarHeat=true,
+    roofHeat=true) annotation(Placement(visible=true,transformation(origin={0,0},extent={{-50,-50},{50,50}},rotation=0)));
+
+  // Supply temperature
+  Modelica.Blocks.Sources.Constant T_supply(k=65) annotation(Placement(visible=true,transformation(origin={-170,100},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Weekend weather: sunny but cold
+  Modelica.Blocks.Sources.TimeTable T_ambient(table=[
+    0,-2;
+    28800,2;
+    43200,8;
+    64800,3;
+    86400,-2;
+    115200,3;
+    129600,10;
+    151200,4;
+    172800,-2]    // Saturday midnight
+                  // 8am: warming
+                  // Noon: sunny, warm
+                  // 6pm: cooling
+                  // Sunday midnight
+                  // 8am: warming
+                  // Noon: warmer day
+                  // 6pm: cooling
+)               annotation(Placement(visible=true,transformation(origin={-170,70},extent={{-10,-10},{10,10}},rotation=0)));
+
+  Modelica.Blocks.Sources.Constant flowRate(k=8.0) annotation(Placement(visible=true,transformation(origin={-170,40},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // SATURDAY: Brunch party + movie night
+  // SUNDAY: Quieter recovery day
+  Modelica.Blocks.Sources.TimeTable occupancy_living(table=[
+    0,0;
+    32400,2;
+    39600,4;
+    50400,2;
+    68400,2;
+    75600,4;
+    86400,0;
+    36000,2;
+    86400,2;
+    115200,2;
+    169200,0;
+    172800,0]     // Sat midnight: sleeping
+                  // Sat 9am: wake up late
+                  // Sat 11am: Guests arrive for brunch
+                  // Sat 2pm: Guests leave
+                  // Sat 7pm: Quiet dinner
+                  // Sat 9pm: Friends over for movie
+                  // Sun midnight: guests left, sleeping
+                  // Sun 10am: wake up
+                  // Sun: quiet day at home
+                  // Sun evening
+                  // Sun 11pm: bed
+)              annotation(Placement(visible=true,transformation(origin={-170,10},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Cellar: Weekend chores
+  Modelica.Blocks.Sources.TimeTable occupancy_cellar(table=[
+    0,0;
+    36000,1;
+    39600,0;
+    122400,1;
+    126000,0]     // Sat 10am: Laundry
+                  // Sun 10am: More laundry
+)              annotation(Placement(visible=true,transformation(origin={-170,-20},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Roof: Weekend projects
+  Modelica.Blocks.Sources.TimeTable occupancy_roof(table=[
+    0,0;
+    50400,1;
+    61200,0;
+    122400,1;
+    136800,0]     // Sat 2pm: Hobby work
+                  // Sat 5pm: Done
+                  // Sun 10am: More projects
+)              annotation(Placement(visible=true,transformation(origin={-170,-50},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Weekend cooking: more elaborate
+  Modelica.Blocks.Sources.TimeTable appliances_living(table=[
+    0,100;
+    32400,300;
+    36000,600;
+    39600,1200;
+    43200,300;
+    50400,200;
+    64800,800;
+    68400,300;
+    75600,400;
+    90000,100;
+    118800,400;
+    147600,600;
+    154800,200;
+    169200,100]   // Sat 9am: breakfast
+                  // Sat 10am: brunch prep starts
+                  // Sat 11am: brunch cooking (multiple dishes)
+                  // Sat noon: eating
+                  // Sat 2pm: cleanup done
+                  // Sat 6pm: dinner prep
+                  // Sat 7pm: eating
+                  // Sat 9pm: movie + snacks
+                  // Sun 1am: sleep
+                  // Sun 11am: late breakfast
+                  // Sun 5pm: Sunday dinner
+                  // Sun 7pm: relaxing
+)                annotation(Placement(visible=true,transformation(origin={170,10},extent={{-10,-10},{10,10}},rotation=180)));
+
+  // Cellar: Washer + dryer
+  Modelica.Blocks.Sources.TimeTable appliances_cellar(table=[
+    0,50;
+    36000,1800;
+    43200,50;
+    122400,1800;
+    129600,50]    // Sat 10am: washing + drying
+                  // Sun 10am: more laundry
+)               annotation(Placement(visible=true,transformation(origin={170,-20},extent={{-10,-10},{10,10}},rotation=180)));
+
+  // Roof: Workshop tools
+  Modelica.Blocks.Sources.TimeTable appliances_roof(table=[
+    0,50;
+    50400,400;
+    61200,50;
+    122400,400;
+    136800,50]    // Sat 2pm: Tools, lights
+                  // Sun 10am: More work
+)               annotation(Placement(visible=true,transformation(origin={170,-50},extent={{-10,-10},{10,10}},rotation=180)));
+
+  // MONITORING
+  Real T_living_degC=building.T_roomIs_degC;
+  Real T_cellar_degC=building.T_cellarIs_degC;
+  Real T_roof_degC=building.T_roofIs_degC;
+  Real T_return_degC=building.STM_HCRL_Set_degC;
+  Real flowRate_lpm=building.SFW_HCRLbM_Set_l_per_min;
+  Real valve_cellar=building.valve_cellar_opening;
+  Real valve_living=building.valve_living_opening;
+  Real valve_roof=building.valve_roof_opening;
+
+  // Energy analysis
+  Real daily_heating_Sat_kWh=if time<86400 then (valve_living+valve_cellar+valve_roof)*1.5*time/3600 else 0;
+  Real daily_heating_Sun_kWh=if time>=86400 then (valve_living+valve_cellar+valve_roof)*1.5*(time-86400)/3600 else 0;
+
+equation
+  connect(T_supply.y,building.STM_HCVLaM_degC) annotation(Line(points={{-159,100},
+          {-90,100},{-90,56},{-120,56}},                                                                       color={0,0,127}));
+  connect(T_ambient.y,building.T_ambient_degC) annotation(Line(points={{-159,70},
+          {-90,70},{-90,6},{-120,6}},                                                                      color={0,0,127}));
+  connect(flowRate.y,building.SFW_HCRLbM_l_per_min) annotation(Line(points={{-159,40},
+          {-90,40},{-90,24},{-120,24}},                                                                           color={0,0,127}));
+  connect(occupancy_living.y,building.nPersons_living_in) annotation(Line(points={{-159,10},
+          {-90,10},{-90,-6},{-120,-6}},                                                                                 color={0,0,127}));
+  connect(occupancy_cellar.y,building.nPersons_cellar_in) annotation(Line(points={{-159,
+          -20},{-90,-20},{-90,-25},{-120,-25}},                                                                             color={0,0,127}));
+  connect(occupancy_roof.y,building.nPersons_roof_in) annotation(Line(points={{-159,
+          -50},{-90,-50},{-90,-46},{-120,-46}},                                                                         color={0,0,127}));
+  connect(appliances_living.y,building.P_appliances_living_W_in) annotation(Line(points={{159,10},
+          {90,10},{90,-8},{154,-8}},                                                                                       color={0,0,127}));
+  connect(appliances_cellar.y,building.P_appliances_cellar_W_in) annotation(Line(points={{159,-20},
+          {90,-20},{90,7},{155,7}},                                                                                            color={0,0,127}));
+  connect(appliances_roof.y,building.P_appliances_roof_W_in) annotation(Line(points={{159,-50},
+          {90,-50},{90,-26},{154,-26}},                                                                                    color={0,0,127}));
+
+  annotation(
+    experiment(StartTime=0,StopTime=172800,Interval=120,Tolerance=1e-06,__Dymola_Algorithm="Dassl"),
+    Documentation(info="<html>
+<h4>Weekend Scenario (48 hours)</h4>
+
+<h5>SATURDAY - Active Day:</h5>
+<ul>
+<li><b>9am:</b> Wake up, lazy breakfast</li>
+<li><b>10am:</b> Start laundry, prep for brunch</li>
+<li><b>11am:</b> Guests arrive (4 people), cooking 1200W</li>
+<li><b>2pm:</b> Guests leave, hobby work in roof</li>
+<li><b>6pm:</b> Dinner preparation</li>
+<li><b>9pm:</b> Movie night, friends over (4 people)</li>
+<li><b>1am:</b> Everyone leaves/sleeps</li>
+</ul>
+
+<h5>SUNDAY - Recovery Day:</h5>
+<ul>
+<li><b>10am:</b> Wake up late, more laundry</li>
+<li><b>11am:</b> Relaxed breakfast</li>
+<li><b>Afternoon:</b> Light hobby work</li>
+<li><b>5pm:</b> Sunday dinner</li>
+<li><b>Evening:</b> Quiet, preparing for week</li>
+</ul>
+
+<h5>Weather:</h5>
+<ul>
+<li>Saturday: Cold morning (-2°C), sunny day (8°C)</li>
+<li>Sunday: Nicer day, up to 10°C afternoon</li>
+</ul>
+
+<p><b>Expected Behavior:</b></p>
+<ul>
+<li>Living temp rises during brunch (4 people + cooking)</li>
+<li>Peaks around 23°C (comfortable, not overheating)</li>
+<li>Second peak during movie night</li>
+<li>Sunday is calmer, more stable temps</li>
+<li>System handles load well</li>
+<li>Interesting valve modulation</li>
+</ul>
+
+<p><b>Key Differences from DynamicScenario:</b></p>
+<ul>
+<li>✅ Max 4 people (not 8)</li>
+<li>✅ Max 1200W cooking (not 1500W)</li>
+<li>✅ Warmer outside (helps with heat loss)</li>
+<li>✅ Shorter high-load periods</li>
+<li>✅ Should stay under 24°C (comfortable)</li>
+</ul>
+</html>"));
+end TestThreeZoneBuilding_WeekendScenario;

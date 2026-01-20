@@ -1,0 +1,189 @@
+within CoSES_Thermal_ProHMo_PHiL.BuildingSystem.Building;
+model HeatedZoneLite
+  "Simplified heated zone for PHiL (Option B: no internal water network)"
+
+  import Modelica.Units.SI;
+  import CoSES_Thermal_ProHMo_PHiL.Interfaces.EnvironmentConditions;
+
+  /****************************************
+   * 1) PARAMETERS
+   ****************************************/
+
+  // --- Zone geometry ---
+  parameter SI.Volume  VAir      = 75         "Zone air volume";
+  parameter SI.Area    AZone     = 50         "Floor area (for comfort / normalisation)";
+  parameter Integer    Bound     = 3          "Number of exterior boundaries";
+
+  // --- Air thermal capacity (effective) ---
+  parameter SI.Density               rhoAirZone = 1.2    "Effective air density";
+  parameter SI.SpecificHeatCapacity  cpAirZone  = 1006   "Effective air cp";
+  parameter SI.HeatCapacity          CZoneAir   = rhoAirZone*cpAirZone*VAir
+    "Effective heat capacity of air + lightweight interior";
+
+  // --- Per-boundary U*A (lumped) ---
+  parameter SI.Area ABound[Bound]  = {120, 30, 30} "Wall/floor/roof areas";
+  parameter SI.CoefficientOfHeatTransfer UBound[Bound] = {0.3, 0.4, 0.25}
+    "Overall U-values per boundary";
+  parameter Boolean groundContact[Bound] = {false,true,false}
+    "True if boundary i is in contact with ground";
+
+  // --- Internal gains (people, devices, etc.) ---
+  parameter SI.HeatFlowRate QIntConst = 0 "Constant internal gains";
+
+  // --- Comfort / reference temperature ---
+  Modelica.Blocks.Interfaces.RealInput TZoneRef
+    "Reference/comfort temperature (K)"
+    annotation (Placement(transformation(extent={{-120,60},{-100,80}})));
+
+  /****************************************
+   * 2) ENVIRONMENT CONDITIONS
+   ****************************************/
+
+  parameter EnvironmentConditions env
+    "Ambient & ground conditions"
+    annotation (Placement(transformation(extent={{-100,-80},{-80,-60}})));
+
+  SI.Temperature TAmbientBound[Bound]
+    "Ambient temperature seen by each boundary (air or ground)";
+  SI.Temperature TGround[Bound]
+    "Auxiliary ground temperature per boundary";
+
+  /****************************************
+   * 3) PHIL HYDRONIC INTERFACE (OPTION B)
+   ****************************************/
+
+  // Water properties (fixed – PHIL plant handles real fluid dynamics)
+  parameter SI.SpecificHeatCapacity cpMedHeat = 4180
+    "Specific heat capacity of water (approx.)";
+  parameter SI.Density rhoMedHeat              = 1000
+    "Density of water (approx.)";
+
+  // Inputs from PHIL water circuit (you get these from your PHIL model)
+  Modelica.Blocks.Interfaces.RealInput TFlowHeat
+    "Supply temperature from plant (K)"
+    annotation (Placement(transformation(extent={{-120,20},{-100,40}})));
+
+  Modelica.Blocks.Interfaces.RealInput TReturnHeat
+    "Return temperature to plant (K)"
+    annotation (Placement(transformation(extent={{-120,-10},{-100,10}})));
+
+  Modelica.Blocks.Interfaces.RealInput qvHeat
+    "Volume flow rate of water (m3/s)"
+    annotation (Placement(transformation(extent={{-120,-40},{-100,-20}})));
+
+  // Output: what building 'asks' from plant (+ into zone, - from zone)
+  Modelica.Blocks.Interfaces.RealOutput QHeatCoolLoad
+    "Net heat flow from PHIL plant into zone (+ means adding heat to air)"
+    annotation (Placement(transformation(extent={{100,20},{120,40}})));
+
+  /****************************************
+   * 4) ZONE STATE & OUTPUTS
+   ****************************************/
+
+  SI.Temperature TZoneAct(start=293.15, stateSelect=StateSelect.prefer)
+    "Actual zone air temperature";
+  SI.HeatFlowRate QEnv[Bound]
+    "Heat flow through each boundary (+ into zone)";
+  SI.HeatFlowRate QEnvTot
+    "Total envelope heat flow (+ into zone)";
+  SI.HeatFlowRate QHydronic
+    "Hydronic heat input from PHIL plant (+ into zone)";
+  SI.HeatFlowRate QInt
+    "Internal gains (+ into zone)";
+  SI.HeatFlowRate QTotal
+    "Total heat going into air node";
+
+  // Convenience output
+  Modelica.Blocks.Interfaces.RealOutput TZoneActOut
+    "Expose zone temperature"
+    annotation (Placement(transformation(extent={{100,-20},{120,0}})));
+
+equation
+  /****************************************
+   * 5) BOUNDARY TEMPERATURES
+   ****************************************/
+
+  for i in 1:Bound loop
+    if groundContact[i] then
+      // Ground-connected: use annual average as simple approximation
+      TGround[i]       = env.TAverageAmbientAnnual;
+      TAmbientBound[i] = TGround[i];
+    else
+      // Non-ground: simple ambient
+      TGround[i]       = env.TAmbient;
+      TAmbientBound[i] = env.TAmbient;
+    end if;
+  end for;
+
+  /****************************************
+   * 6) ENVELOPE HEAT FLOWS
+   ****************************************/
+
+  for i in 1:Bound loop
+    // Positive QEnv[i] means heat flows INTO the zone
+    QEnv[i] = UBound[i]*ABound[i]*(TAmbientBound[i] - TZoneAct);
+  end for;
+
+  QEnvTot = sum(QEnv);
+
+  /****************************************
+   * 7) INTERNAL GAINS
+   ****************************************/
+
+  QInt = QIntConst;
+
+  /****************************************
+   * 8) HYDRONIC POWER FROM PHIL PLANT
+   ****************************************/
+
+  // Hydronic heat: Q = rho * cp * Vdot * (T_flow - T_return)
+  // Sign convention: + means heating the room air
+  QHydronic = rhoMedHeat*cpMedHeat*qvHeat*(TFlowHeat - TReturnHeat);
+
+  // This is what you usually expose as building load
+  QHeatCoolLoad = QHydronic;
+
+  /****************************************
+   * 9) ZONE ENERGY BALANCE (SINGLE STATE)
+   ****************************************/
+
+  CZoneAir * der(TZoneAct) = QEnvTot + QInt + QHydronic;
+
+  // Export actual zone temperature
+  TZoneActOut = TZoneAct;
+
+  /****************************************
+   * 10) OPTIONAL: SIMPLE COMFORT INFO (NO CONTROL)
+   ****************************************/
+
+  // You can add comfort / deviation if you want, e.g.:
+  // Real TError;
+  // TError = TZoneRef - TZoneAct;
+  // (not used in balance, just for monitoring)
+
+  annotation (
+    Icon(graphics = {
+      Rectangle(
+        extent={{-80,80},{80,-80}},
+        lineColor={0,0,0},
+        fillPattern=FillPattern.Solid,
+        fillColor={215,215,215}),
+      Text(
+        extent={{-70,50},{70,20}},
+        textString="HeatedZone",
+        lineColor={0,0,0}),
+      Text(
+        extent={{-70,10},{70,-20}},
+        textString="PHiL Option B",
+        lineColor={0,0,0})}),
+    Diagram(graphics = {
+      Rectangle(
+        extent={{-40,40},{40,-40}},
+        lineColor={0,0,255},
+        fillColor={230,230,255},
+        fillPattern=FillPattern.Solid),
+      Text(
+        extent={{-30,20},{30,0}},
+        textString="Zone Air\nTZoneAct",
+        lineColor={0,0,255})}));
+end HeatedZoneLite;

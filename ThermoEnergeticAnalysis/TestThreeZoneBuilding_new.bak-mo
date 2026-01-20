@@ -1,0 +1,75 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model TestThreeZoneBuilding_new
+  "Test model - HYDRAULICALLY STABLE"
+
+  inner Modelica.Fluid.System system annotation(Placement(visible=true,transformation(origin={-170,170},extent={{-10,-10},{10,10}},rotation=0)));
+
+  CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis.ThreeZoneBuilding_PHiL_new building(
+    k_PI=0.5,
+    Ti_PI=300,
+    cellarHeat=true,
+    roofHeat=true) annotation(Placement(visible=true,transformation(origin={0,0},extent={{-50,-50},{50,50}},rotation=0)));
+
+  // Supply temperature
+  Modelica.Blocks.Sources.Ramp T_supply_ramp(height=10,duration=3600,offset=60,startTime=0) annotation(Placement(visible=true,transformation(origin={-170,100},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Sources.Constant T_supply_steady(k=65) annotation(Placement(visible=true,transformation(origin={-170,70},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Logical.Switch T_supply_switch annotation(Placement(visible=true,transformation(origin={-130,80},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Sources.BooleanStep rampComplete(startTime=3600) annotation(Placement(visible=true,transformation(origin={-170,30},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Flow rate - IGNORED (pressure driven)
+  Modelica.Blocks.Sources.Constant flowRate(k=6.0) annotation(Placement(visible=true,transformation(origin={-170,-10},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Ambient temperature
+  Modelica.Blocks.Sources.Sine T_ambient_sine(amplitude=5,f=1/(24*3600),offset=5,startTime=0) annotation(Placement(visible=true,transformation(origin={-170,-50},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Occupancy
+  Modelica.Blocks.Sources.Pulse occupancy_living(amplitude=2,width=50,period=24*3600,offset=1) annotation(Placement(visible=true,transformation(origin={-170,-90},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Sources.Constant occupancy_cellar(k=0) annotation(Placement(visible=true,transformation(origin={-170,-120},extent={{-10,-10},{10,10}},rotation=0)));
+  Modelica.Blocks.Sources.Step occupancy_roof(height=1,offset=0,startTime=43200) annotation(Placement(visible=true,transformation(origin={-170,-150},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Appliances
+  Modelica.Blocks.Sources.Pulse appliances_living(amplitude=300,width=30,period=24*3600,offset=200) annotation(Placement(visible=true,transformation(origin={170,-90},extent={{-10,-10},{10,10}},rotation=180)));
+  Modelica.Blocks.Sources.Constant appliances_cellar(k=50) annotation(Placement(visible=true,transformation(origin={170,-120},extent={{-10,-10},{10,10}},rotation=180)));
+  Modelica.Blocks.Sources.Step appliances_roof(height=100,offset=50,startTime=86400) annotation(Placement(visible=true,transformation(origin={170,-150},extent={{-10,-10},{10,10}},rotation=180)));
+
+  // Monitoring
+  Real T_living_degC=building.T_roomIs_degC;
+  Real T_cellar_degC=building.T_cellarIs_degC;
+  Real T_roof_degC=building.T_roofIs_degC;
+  Real T_return_degC=building.STM_HCRL_Set_degC;
+  Real flowRate_total_lpm=building.SFW_HCRLbM_Set_l_per_min;
+  Real valve_cellar_pos=building.valve_cellar_opening;
+  Real valve_living_pos=building.valve_living_opening;
+  Real valve_roof_pos=building.valve_roof_opening;
+  Real T_error_living=21.0-T_living_degC;
+  Real T_error_cellar=15.0-T_cellar_degC;
+  Real T_error_roof=21.0-T_roof_degC;
+
+equation
+  connect(rampComplete.y,T_supply_switch.u2) annotation(Line(points={{-159,30},{-150,30},{-150,80},{-142,80}},color={255,0,255}));
+  connect(T_supply_ramp.y,T_supply_switch.u1) annotation(Line(points={{-159,100},{-150,100},{-150,88},{-142,88}},color={0,0,127}));
+  connect(T_supply_steady.y,T_supply_switch.u3) annotation(Line(points={{-159,70},{-150,70},{-150,72},{-142,72}},color={0,0,127}));
+  connect(T_supply_switch.y,building.STM_HCVLaM_degC) annotation(Line(points={{-119,80},
+          {-90,80},{-90,56},{-120,56}},                                                                             color={0,0,127}));
+
+  connect(flowRate.y,building.SFW_HCRLbM_l_per_min) annotation(Line(points={{-159,
+          -10},{-90,-10},{-90,24},{-120,24}},                                                                       color={0,0,127}));
+  connect(T_ambient_sine.y,building.T_ambient_degC) annotation(Line(points={{-159,
+          -50},{-90,-50},{-90,6},{-120,6}},                                                                       color={0,0,127}));
+
+  connect(occupancy_living.y,building.nPersons_living_in) annotation(Line(points={{-159,
+          -90},{-90,-90},{-90,-6},{-120,-6}},                                                                             color={0,0,127}));
+  connect(occupancy_cellar.y,building.nPersons_cellar_in) annotation(Line(points={{-159,
+          -120},{-90,-120},{-90,-25},{-120,-25}},                                                                             color={0,0,127}));
+  connect(occupancy_roof.y,building.nPersons_roof_in) annotation(Line(points={{-159,
+          -150},{-90,-150},{-90,-46},{-120,-46}},                                                                         color={0,0,127}));
+
+  connect(appliances_living.y,building.P_appliances_living_W_in) annotation(Line(points={{159,-90},
+          {90,-90},{90,-8},{154,-8}},                                                                                        color={0,0,127}));
+  connect(appliances_cellar.y,building.P_appliances_cellar_W_in) annotation(Line(points={{159,
+          -120},{90,-120},{90,7},{155,7}},                                                                                       color={0,0,127}));
+  connect(appliances_roof.y,building.P_appliances_roof_W_in) annotation(Line(points={{159,
+          -150},{90,-150},{90,-26},{154,-26}},                                                                               color={0,0,127}));
+
+  annotation(experiment(StartTime=0,StopTime=259200,Interval=60,Tolerance=1e-06,__Dymola_Algorithm="Dassl"));
+end TestThreeZoneBuilding_new;

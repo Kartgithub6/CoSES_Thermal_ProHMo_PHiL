@@ -1,0 +1,624 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model ThreeZoneBuilding_basic
+  "Three-zone heated building with hydronic heating system - Dymola version"
+
+  // ============================================================================
+  // MEDIUM AND SYSTEM
+  // ============================================================================
+  inner Modelica.Fluid.System system
+    annotation (Placement(transformation(extent={{-180,160},{-160,180}})));
+
+  replaceable package Medium = IBPSA.Media.Water
+    constrainedby Modelica.Media.Interfaces.PartialMedium
+    annotation (choicesAllMatching=true); // 11 jan 19.00 IBPSA.Media.Water // 25 Dec 09.00 Modelica.Media.Water.StandardWater // Modelica.Media.Water.ConstantPropertyLiquidWater
+
+  // ============================================================================
+  // EXTERNAL CONNECTORS
+  // ============================================================================
+  Modelica.Fluid.Interfaces.FluidPort_a port_a(redeclare package Medium = Medium)
+    "Supply water inlet from heating source"
+    annotation (Placement(transformation(extent={{-210,-10},{-190,10}}),
+        iconTransformation(extent={{-210,90},{-190,110}})));
+
+  Modelica.Fluid.Interfaces.FluidPort_b port_b(redeclare package Medium = Medium)
+    "Return water outlet to heating source"
+    annotation (Placement(transformation(extent={{-210,-110},{-190,-90}}),
+        iconTransformation(extent={{-210,-60},{-190,-40}})));
+
+  Modelica.Blocks.Interfaces.RealOutput qvRef(unit="m3/s", displayUnit="l/min")
+    "Total demanded volume flow rate"
+    annotation (Placement(transformation(extent={{200,-110},{220,-90}})));
+
+  Modelica.Blocks.Interfaces.RealOutput TZone_cellar(unit="K", displayUnit="degC")
+    "Cellar zone temperature"
+    annotation (Placement(transformation(extent={{200,130},{220,150}})));
+
+  Modelica.Blocks.Interfaces.RealOutput TZone_living(unit="K", displayUnit="degC")
+    "Living zone temperature"
+    annotation (Placement(transformation(extent={{200,30},{220,50}})));
+
+  Modelica.Blocks.Interfaces.RealOutput TZone_roof(unit="K", displayUnit="degC")
+    "Roof zone temperature"
+    annotation (Placement(transformation(extent={{200,-70},{220,-50}})));
+
+  // ============================================================================
+  // PARAMETERS
+  // ============================================================================
+  // Building parameters
+  parameter Modelica.Units.SI.Area AZone_cellar = 80 "Cellar floor area [m²]";
+  parameter Modelica.Units.SI.Area AZone_living = 100 "Living zone floor area [m²]";
+  parameter Modelica.Units.SI.Area AZone_roof = 60 "Roof zone floor area [m²]";
+
+  parameter Modelica.Units.SI.Length hZone_cellar = 2.2 "Cellar height [m]";
+  parameter Modelica.Units.SI.Length hZone_living = 2.5 "Living zone height [m]";
+  parameter Modelica.Units.SI.Length hZone_roof = 2.3 "Roof zone height [m]";
+
+  // Temperature setpoints
+  parameter Modelica.Units.SI.Temperature TRef_cellar = 288.15 "Cellar setpoint (15°C)";
+  parameter Modelica.Units.SI.Temperature TRef_living = 293.15 "Living zone setpoint (20°C)";
+  parameter Modelica.Units.SI.Temperature TRef_roof = 293.15 "Roof setpoint (20°C)";
+
+  // Initial temperatures
+  parameter Modelica.Units.SI.Temperature TZoneInit_cellar = 283.15 "Cellar initial temp (10°C)";
+  parameter Modelica.Units.SI.Temperature TZoneInit_living = 288.15 "Living initial temp (15°C)";
+  parameter Modelica.Units.SI.Temperature TZoneInit_roof = 285.15 "Roof initial temp (12°C)";
+
+  // Outdoor temperature
+  parameter Modelica.Units.SI.Temperature TOutdoor = 278.15 "Outdoor temperature (5°C)";
+
+  // Heating control
+  parameter Boolean cellarHeat = true "If true, cellar is heated";
+  parameter Boolean roofHeat = true "If true, roof is heated";
+
+  // Valve parameters
+  parameter Real Kv_valve = 10 "Valve flow coefficient [m3/h at 1 bar]";
+
+  // ============================================================================
+  // SUPPLY FLOW MEASUREMENT AND DISTRIBUTION
+  // ============================================================================
+
+  // Flow sensor at inlet
+  Modelica.Fluid.Sensors.VolumeFlowRate qvMedium(redeclare package Medium = Medium)
+    "Measure total supply flow"
+    annotation (Placement(transformation(extent={{-180,-10},{-160,10}})));
+
+  // Temperature sensor at inlet
+  Modelica.Fluid.Sensors.TemperatureTwoPort TMedium(redeclare package Medium = Medium)
+    "Measure supply temperature"
+    annotation (Placement(transformation(extent={{-150,-10},{-130,10}})));
+
+  // Main distribution junction (splits to cellar vs living+roof)
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeMain(
+    redeclare package Medium = Medium)
+    "Main junction: splits flow to cellar branch and living/roof branch"
+    annotation (Placement(transformation(extent={{-120,-10},{-100,10}})));
+
+  // Secondary junction (splits living+roof flow)
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeLivingRoof(
+    redeclare package Medium = Medium)
+    "Secondary junction: splits flow to living zone and roof"
+    annotation (Placement(transformation(extent={{-80,-60},{-60,-40}})));
+
+  // ============================================================================
+  // FLOW CONTROL VALVES (using ValveLinear for simplicity)
+  // ============================================================================
+
+  // Cellar valve
+  Modelica.Fluid.Valves.ValveLinear valve_cellar(
+    redeclare package Medium = Medium,
+    dp_nominal = 10000,
+    m_flow_nominal = 0.05)
+    "Cellar flow control valve"
+    annotation (Placement(transformation(extent={{-60,90},{-40,110}})));
+
+  // Living zone valve
+  Modelica.Fluid.Valves.ValveLinear valve_living(
+    redeclare package Medium = Medium,
+    dp_nominal = 10000,
+    m_flow_nominal = 0.05)
+    "Living zone flow control valve"
+    annotation (Placement(transformation(extent={{-60,-10},{-40,10}})));
+
+  // Roof valve
+  Modelica.Fluid.Valves.ValveLinear valve_roof(
+    redeclare package Medium = Medium,
+    dp_nominal = 10000,
+    m_flow_nominal = 0.05)
+    "Roof flow control valve"
+    annotation (Placement(transformation(extent={{-60,-110},{-40,-90}})));
+
+  // ============================================================================
+  // RETURN FLOW MERGING
+  // ============================================================================
+
+  // Living+Roof merge junction
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeMergeLivingRoof(
+    redeclare package Medium = Medium)
+    "Merge living and roof return flows"
+    annotation (Placement(transformation(extent={{80,-60},{100,-40}})));
+
+  // Main merge junction
+  Modelica.Fluid.Fittings.TeeJunctionIdeal teeMergeMain(
+    redeclare package Medium = Medium)
+    "Merge cellar and living/roof return flows"
+    annotation (Placement(transformation(extent={{120,-110},{140,-90}})));
+
+  // Return temperature sensor
+  Modelica.Fluid.Sensors.TemperatureTwoPort TReturn(redeclare package Medium = Medium)
+    "Measure return temperature"
+    annotation (Placement(transformation(extent={{-150,-110},{-170,-90}})));
+
+  // ============================================================================
+  // HYDRONIC SYSTEMS (Water-to-HeatPort converters)
+  // ============================================================================
+
+  HydronicSystem.SystemWithZoneAndHydronics cellar_hydSys(
+    redeclare package Medium = Medium)
+    "Cellar hydronic system"
+    annotation (Placement(transformation(extent={{-22,90},{18,130}})));
+
+  HydronicSystem.SystemWithZoneAndHydronics living_hydSys(
+    redeclare package Medium = Medium)
+    "Living zone hydronic system"
+    annotation (Placement(transformation(extent={{-20,-10},{20,30}})));
+
+  HydronicSystem.SystemWithZoneAndHydronics roof_hydSys(
+    redeclare package Medium = Medium)
+    "Roof hydronic system"
+    annotation (Placement(transformation(extent={{-20,-110},{20,-70}})));
+
+  // ============================================================================
+  // HEATED ZONES
+  // ============================================================================
+
+  BuildingSystem.Building.HeatedZone cellar_zone(
+    ZoneIndex = 1,
+    NumberZones = 3,
+    AZone = AZone_cellar,
+    hZone = hZone_cellar,
+    TZoneInit = TZoneInit_cellar,
+    infiltrationRate = 0.3,
+    occupancyLoad = 50,
+    applianceLoad = 50)
+    "Cellar heated zone"
+    annotation (Placement(transformation(extent={{60,90},{100,130}})));
+
+  BuildingSystem.Building.HeatedZone living_zone(
+    ZoneIndex = 2,
+    NumberZones = 3,
+    AZone = AZone_living,
+    hZone = hZone_living,
+    TZoneInit = TZoneInit_living,
+    infiltrationRate = 0.5,
+    occupancyLoad = 200,
+    applianceLoad = 150)
+    "Living zone (main heated space)"
+    annotation (Placement(transformation(extent={{60,-10},{100,30}})));
+
+  BuildingSystem.Building.HeatedZone roof_zone(
+    ZoneIndex = 3,
+    NumberZones = 3,
+    AZone = AZone_roof,
+    hZone = hZone_roof,
+    TZoneInit = TZoneInit_roof,
+    infiltrationRate = 0.4,
+    occupancyLoad = 100,
+    applianceLoad = 50)
+    "Roof zone"
+    annotation (Placement(transformation(extent={{60,-110},{100,-70}})));
+
+  // ============================================================================
+  // REFERENCE TEMPERATURE SETPOINTS
+  // ============================================================================
+
+  Modelica.Blocks.Sources.Constant TRefConst_cellar(k=TRef_cellar)
+    "Cellar temperature setpoint"
+    annotation (Placement(transformation(extent={{140,140},{160,160}})));
+
+  Modelica.Blocks.Sources.Constant TRefConst_living(k=TRef_living)
+    "Living zone temperature setpoint"
+    annotation (Placement(transformation(extent={{140,40},{160,60}})));
+
+  Modelica.Blocks.Sources.Constant TRefConst_roof(k=TRef_roof)
+    "Roof temperature setpoint"
+    annotation (Placement(transformation(extent={{140,-60},{160,-40}})));
+
+  // ============================================================================
+  // WINDOW SHADING (constant zero = no shading)
+  // ============================================================================
+
+  Modelica.Blocks.Sources.Constant WindowShadingConst_cellar[3](each k=0)
+    annotation (Placement(transformation(extent={{40,140},{60,160}})));
+  Modelica.Blocks.Sources.Constant WindowShadingConst_living[3](each k=0)
+    annotation (Placement(transformation(extent={{40,40},{60,60}})));
+  Modelica.Blocks.Sources.Constant WindowShadingConst_roof[3](each k=0)
+    annotation (Placement(transformation(extent={{40,-60},{60,-40}})));
+
+  // ============================================================================
+  // VALVE OPENING CONTROLS (simplified - constant open for testing)
+  // ============================================================================
+
+  Modelica.Blocks.Sources.Constant valveOpen_cellar(k=if cellarHeat then 0.5 else 0)
+    "Cellar valve opening (0=closed, 1=full open)"
+    annotation (Placement(transformation(extent={{-100,120},{-80,140}})));
+
+  Modelica.Blocks.Sources.Constant valveOpen_living(k=0.7)
+    "Living valve opening"
+    annotation (Placement(transformation(extent={{-100,20},{-80,40}})));
+
+  Modelica.Blocks.Sources.Constant valveOpen_roof(k=if roofHeat then 0.5 else 0)
+    "Roof valve opening"
+    annotation (Placement(transformation(extent={{-100,-80},{-80,-60}})));
+
+  // ============================================================================
+  // VOLUME FLOW SUM
+  // ============================================================================
+
+  Modelica.Blocks.Math.Add3 qvSum
+    "Sum of all zone volume flow demands"
+    annotation (Placement(transformation(extent={{160,-110},{180,-90}})));
+
+  // Volume flow from each valve (approximated from opening)
+  Modelica.Blocks.Math.Gain qv_cellar_approx(k=0.001)
+    annotation (Placement(transformation(extent={{120,120},{140,140}})));
+  Modelica.Blocks.Math.Gain qv_living_approx(k=0.001)
+    annotation (Placement(transformation(extent={{120,20},{140,40}})));
+  Modelica.Blocks.Math.Gain qv_roof_approx(k=0.001)
+    annotation (Placement(transformation(extent={{120,-80},{140,-60}})));
+
+
+  // ============================================================================
+  // INTERNAL GAINS INPUTS (Hidden from icon - accessed via equations)
+  // ============================================================================
+  Modelica.Blocks.Interfaces.RealInput nPersons_cellar(start=0)
+    "Number of persons in cellar"
+    annotation (Placement(
+      transformation(extent={{-230,160},{-190,200}}),
+      iconTransformation(extent={{-380,180},{-360,200}})));
+  Modelica.Blocks.Interfaces.RealInput nPersons_living(start=0)
+    "Number of persons in living zone"
+    annotation (Placement(
+      transformation(extent={{-230,120},{-190,160}}),
+      iconTransformation(extent={{-380,140},{-360,160}})));
+  Modelica.Blocks.Interfaces.RealInput nPersons_roof(start=0)
+    "Number of persons in roof zone"
+    annotation (Placement(
+      transformation(extent={{-230,80},{-190,120}}),
+      iconTransformation(extent={{-380,100},{-360,120}})));
+
+  Modelica.Blocks.Interfaces.RealInput P_appliances_cellar_W(start=50)
+    "Cellar appliance power [W]"
+    annotation (Placement(
+      transformation(extent={{210,160},{250,200}}),
+      iconTransformation(extent={{360,180},{380,200}})));
+  Modelica.Blocks.Interfaces.RealInput P_appliances_living_W(start=200)
+    "Living zone appliance power [W]"
+    annotation (Placement(
+      transformation(extent={{210,120},{250,160}}),
+      iconTransformation(extent={{360,140},{380,160}})));
+  Modelica.Blocks.Interfaces.RealInput P_appliances_roof_W(start=50)
+    "Roof zone appliance power [W]"
+    annotation (Placement(
+      transformation(extent={{210,80},{250,120}}),
+      iconTransformation(extent={{360,100},{380,120}})));
+
+equation
+  // ============================================================================
+  // INTERNAL GAINS PASS-THROUGH (Input -> Input requires equation, not connect)
+  // ============================================================================
+  cellar_zone.nPersons = nPersons_cellar;
+  living_zone.nPersons = nPersons_living;
+  roof_zone.nPersons = nPersons_roof;
+
+  cellar_zone.P_appliances_W = P_appliances_cellar_W;
+  living_zone.P_appliances_W = P_appliances_living_W;
+  roof_zone.P_appliances_W = P_appliances_roof_W;
+
+  // Set radiation to 0 for now
+  cellar_zone.Q_radiation_W = 0;
+  living_zone.Q_radiation_W = 0;
+  roof_zone.Q_radiation_W = 0;
+
+  // ============================================================================
+  // SUPPLY PATH CONNECTIONS
+  // ============================================================================
+
+  // Inlet to flow sensor
+  connect(port_a, qvMedium.port_a)
+    annotation (Line(points={{-200,0},{-180,0}}, color={0,127,255}));
+
+  // Flow sensor to temperature sensor
+  connect(qvMedium.port_b, TMedium.port_a)
+    annotation (Line(points={{-160,0},{-150,0}}, color={0,127,255}));
+
+  // Temperature sensor to main junction
+  connect(TMedium.port_b, teeMain.port_1)
+    annotation (Line(points={{-130,0},{-120,0}}, color={0,127,255}));
+
+  // Main junction splits: port_2 to cellar branch, port_3 to living/roof
+  connect(teeMain.port_2, valve_cellar.port_a)
+    annotation (Line(points={{-100,0},{-100,100},{-60,100}},  color={0,127,255}));
+
+  connect(teeMain.port_3, teeLivingRoof.port_1)
+    annotation (Line(points={{-110,10},{-90,10},{-90,-50},{-80,-50}},
+                                                                    color={0,127,255}));
+
+  // Living/Roof junction splits
+  connect(teeLivingRoof.port_2, valve_living.port_a)
+    annotation (Line(points={{-60,-50},{-60,0},{-60,0}}, color={0,127,255}));
+
+  connect(teeLivingRoof.port_3, valve_roof.port_a)
+    annotation (Line(points={{-70,-40},{-70,-70},{-70,-70},{-70,-100},{-60,-100}}, color={0,127,255}));
+
+  // ============================================================================
+  // VALVE TO HYDRONIC SYSTEM CONNECTIONS
+  // ============================================================================
+
+  // Cellar
+  connect(valve_cellar.port_b, cellar_hydSys.port_a)
+    annotation (Line(points={{-40,100},{-30,100},{-30,110},{-19.6,110}}, color={0,127,255}));
+
+  // Living
+  connect(valve_living.port_b, living_hydSys.port_a)
+    annotation (Line(points={{-40,0},{-30,0},{-30,10},{-17.6,10}}, color={0,127,255}));
+
+  // Roof
+  connect(valve_roof.port_b, roof_hydSys.port_a)
+    annotation (Line(points={{-40,-100},{-30,-100},{-30,-90},{-17.6,-90}}, color={0,127,255}));
+
+  // ============================================================================
+  // HYDRONIC SYSTEM TO ZONE HEAT PORT CONNECTIONS
+  // ============================================================================
+
+  connect(cellar_hydSys.port_zone, cellar_zone.heatPort)
+    annotation (Line(points={{-2,128},{-2,140},{50,140},{50,118.4},{58.8,118.4}},
+                                                                                color={191,0,0}));
+
+  connect(living_hydSys.port_zone, living_zone.heatPort)
+    annotation (Line(points={{0,28},{0,40},{50,40},{50,18.4},{58.8,18.4}}, color={191,0,0}));
+
+  connect(roof_hydSys.port_zone, roof_zone.heatPort)
+    annotation (Line(points={{0,-72},{0,-60},{50,-60},{50,-81.6},{58.8,-81.6}}, color={191,0,0}));
+
+  // ============================================================================
+  // RETURN PATH CONNECTIONS
+  // ============================================================================
+
+  // Hydronic return to merge junctions
+  connect(cellar_hydSys.port_b, teeMergeMain.port_1)
+    annotation (Line(points={{16,110},{40,110},{40,-100},{120,-100}}, color={0,127,255}));
+
+  connect(living_hydSys.port_b, teeMergeLivingRoof.port_1)
+    annotation (Line(points={{18,10},{40,10},{40,-50},{80,-50}}, color={0,127,255}));
+
+  connect(roof_hydSys.port_b, teeMergeLivingRoof.port_3)
+    annotation (Line(points={{18,-90},{40,-90},{40,-40},{90,-40}}, color={0,127,255}));
+
+  // Merge living+roof into main merge
+  connect(teeMergeLivingRoof.port_2, teeMergeMain.port_3)
+    annotation (Line(points={{100,-50},{130,-50},{130,-90}}, color={0,127,255}));
+
+  // Main merge to return sensor
+  connect(teeMergeMain.port_2, TReturn.port_a)
+    annotation (Line(points={{140,-100},{-150,-100}}, color={0,127,255}));
+
+  // Return sensor to outlet
+  connect(TReturn.port_b, port_b)
+    annotation (Line(points={{-170,-100},{-200,-100}}, color={0,127,255}));
+
+  // ============================================================================
+  // ZONE REFERENCE TEMPERATURE CONNECTIONS
+  // ============================================================================
+
+  connect(TRefConst_cellar.y, cellar_zone.TZoneRef)
+    annotation (Line(points={{161,150},{170,150},{170,118},{99.6,118}}, color={0,0,127}));
+
+  connect(TRefConst_living.y, living_zone.TZoneRef)
+    annotation (Line(points={{161,50},{170,50},{170,18},{99.6,18}}, color={0,0,127}));
+
+  connect(TRefConst_roof.y, roof_zone.TZoneRef)
+    annotation (Line(points={{161,-50},{170,-50},{170,-82},{99.6,-82}}, color={0,0,127}));
+
+  // ============================================================================
+  // WINDOW SHADING CONNECTIONS
+  // ============================================================================
+
+  connect(WindowShadingConst_cellar[1:3].y, cellar_zone.WindowShading[1:3])
+    annotation (Line(points={{61,150},{70,150},{70,135},{59.4,135},{59.4,90.2}}, color={0,0,127}));
+
+  connect(WindowShadingConst_living[1:3].y, living_zone.WindowShading[1:3])
+    annotation (Line(points={{61,50},{70,50},{70,35},{59.4,35},{59.4,-9.8}}, color={0,0,127}));
+
+  connect(WindowShadingConst_roof[1:3].y, roof_zone.WindowShading[1:3])
+    annotation (Line(points={{61,-50},{70,-50},{70,-65},{59.4,-65},{59.4,-109.8}}, color={0,0,127}));
+
+  // ============================================================================
+  // VALVE OPENING SIGNAL CONNECTIONS
+  // ============================================================================
+
+  connect(valveOpen_cellar.y, valve_cellar.opening)
+    annotation (Line(points={{-79,130},{-50,130},{-50,108}}, color={0,0,127}));
+
+  connect(valveOpen_living.y, valve_living.opening)
+    annotation (Line(points={{-79,30},{-50,30},{-50,8}}, color={0,0,127}));
+
+  connect(valveOpen_roof.y, valve_roof.opening)
+    annotation (Line(points={{-79,-70},{-50,-70},{-50,-92}}, color={0,0,127}));
+
+  // ============================================================================
+  // ZONE TEMPERATURE OUTPUTS
+  // ============================================================================
+
+  connect(cellar_zone.TZone, TZone_cellar)
+    annotation (Line(points={{72,89.6},{180,89.6},{180,140},{210,140}},      color={0,0,127}));
+
+  connect(living_zone.TZone, TZone_living)
+    annotation (Line(points={{72,-10.4},{180,-10.4},{180,40},{210,40}},  color={0,0,127}));
+
+  connect(roof_zone.TZone, TZone_roof)
+    annotation (Line(points={{72,-110.4},{180,-110.4},{180,-60},{210,-60}},  color={0,0,127}));
+
+  // ============================================================================
+  // VOLUME FLOW SUM (approximation based on valve opening)
+  // ============================================================================
+
+  connect(valveOpen_cellar.y, qv_cellar_approx.u)
+    annotation (Line(points={{-79,130},{118,130}}, color={0,0,127}));
+  connect(valveOpen_living.y, qv_living_approx.u)
+    annotation (Line(points={{-79,30},{118,30}}, color={0,0,127}));
+  connect(valveOpen_roof.y, qv_roof_approx.u)
+    annotation (Line(points={{-79,-70},{118,-70}}, color={0,0,127}));
+
+  connect(qv_cellar_approx.y, qvSum.u1)
+    annotation (Line(points={{141,130},{150,130},{150,-92},{158,-92}}, color={0,0,127}));
+  connect(qv_living_approx.y, qvSum.u2)
+    annotation (Line(points={{141,30},{150,30},{150,-100},{158,-100}}, color={0,0,127}));
+  connect(qv_roof_approx.y, qvSum.u3)
+    annotation (Line(points={{141,-70},{150,-70},{150,-108},{158,-108}}, color={0,0,127}));
+
+  connect(qvSum.y, qvRef)
+    annotation (Line(points={{181,-100},{210,-100}}, color={0,0,127}));
+
+
+  annotation (
+    Icon(coordinateSystem(preserveAspectRatio=false, extent={{-200,-180},{200,180}}),
+      graphics={
+        Rectangle(
+          extent={{-200,180},{200,-180}},
+          lineColor={135,206,235},
+          fillColor={135,206,235},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-200,-120},{200,-180}},
+          lineColor={34,139,34},
+          fillColor={34,139,34},
+          fillPattern=FillPattern.Solid),
+        Ellipse(
+          extent={{140,160},{180,120}},
+          lineColor={255,215,0},
+          fillColor={255,215,0},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-140,-120},{140,40}},
+          lineColor={101,67,33},
+          fillColor={255,228,196},
+          fillPattern=FillPattern.Solid,
+          lineThickness=0.5),
+        Polygon(
+          points={{-160,40},{0,140},{160,40},{-160,40}},
+          lineColor={101,67,33},
+          fillColor={178,34,34},
+          fillPattern=FillPattern.Solid,
+          lineThickness=0.5),
+        Rectangle(
+          extent={{-120,-120},{120,-155}},
+          lineColor={105,105,105},
+          fillColor={169,169,169},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{-100,-125},{100,-150}},
+          textColor={255,255,255},
+          textString="Cellar",
+          textStyle={TextStyle.Bold}),
+        Rectangle(
+          extent={{-120,-100},{120,20}},
+          lineColor={0,0,0},
+          fillColor={255,250,205},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{-100,-30},{100,-70}},
+          textColor={0,0,0},
+          textString="Living",
+          textStyle={TextStyle.Bold}),
+        Polygon(
+          points={{-100,30},{0,110},{100,30},{-100,30}},
+          lineColor={0,0,0},
+          fillColor={255,218,185},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{-60,90},{60,50}},
+          textColor={0,0,0},
+          textString="Roof",
+          textStyle={TextStyle.Bold}),
+        Rectangle(
+          extent={{-20,-100},{20,-40}},
+          lineColor={101,67,33},
+          fillColor={139,69,19},
+          fillPattern=FillPattern.Solid),
+        Ellipse(
+          extent={{8,-65},{14,-71}},
+          lineColor={255,215,0},
+          fillColor={255,215,0},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-100,-10},{-50,15}},
+          lineColor={0,0,139},
+          fillColor={173,216,230},
+          fillPattern=FillPattern.Solid),
+        Line(points={{-75,-10},{-75,15}}, color={0,0,139}),
+        Line(points={{-100,2.5},{-50,2.5}}, color={0,0,139}),
+        Rectangle(
+          extent={{50,-10},{100,15}},
+          lineColor={0,0,139},
+          fillColor={173,216,230},
+          fillPattern=FillPattern.Solid),
+        Line(points={{75,-10},{75,15}}, color={0,0,139}),
+        Line(points={{50,2.5},{100,2.5}}, color={0,0,139}),
+        Ellipse(
+          extent={{-18,55},{18,85}},
+          lineColor={0,0,139},
+          fillColor={173,216,230},
+          fillPattern=FillPattern.Solid),
+        Line(points={{0,55},{0,85}}, color={0,0,139}),
+        Line(points={{-18,70},{18,70}}, color={0,0,139}),
+        Rectangle(
+          extent={{70,100},{95,150}},
+          lineColor={101,67,33},
+          fillColor={178,34,34},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{-180,178},{180,155}},
+          textColor={0,0,255},
+          textString="%name",
+          textStyle={TextStyle.Bold})}
+        // ====== SKY BACKGROUND ======
+
+        // ====== GROUND ======
+
+        // ====== SUN ======
+
+        // ====== HOUSE MAIN BODY ======
+
+        // ====== ROOF ======
+
+        // ====== CELLAR (below ground) ======
+
+        // ====== LIVING ZONE ======
+
+        // ====== ROOF ZONE (attic) ======
+
+        // ====== DOOR ======
+
+        // ====== WINDOWS ======
+
+        // ====== ATTIC WINDOW ======
+
+        // ====== CHIMNEY ======
+
+        // ====== MODEL NAME ======
+),  Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-200,-180},{200,180}})),
+    experiment(
+      StartTime=0,
+      StopTime=172800,
+      Interval=60,
+      Tolerance=1e-06),
+    Documentation(info="<html>
+<h4>ThreeZoneBuilding - With Variable Internal Gains</h4>
+<p>Three-zone heated building model (Cellar, Living, Roof).</p>
+<h5>Internal Gains (passed via equations, hidden from icon):</h5>
+<ul>
+<li>nPersons_cellar, nPersons_living, nPersons_roof</li>
+<li>P_appliances_cellar_W, P_appliances_living_W, P_appliances_roof_W</li>
+</ul>
+</html>"));
+end ThreeZoneBuilding_basic;

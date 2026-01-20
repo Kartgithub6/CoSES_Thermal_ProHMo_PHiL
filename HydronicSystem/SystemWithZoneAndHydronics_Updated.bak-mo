@@ -1,0 +1,214 @@
+within CoSES_Thermal_ProHMo_PHiL.HydronicSystem;
+model SystemWithZoneAndHydronics_Updated
+  "Hydronic loop with EN442-2 radiator and thermal collector for zone connection"
+
+  replaceable package Medium = IBPSA.Media.Water
+    annotation(choicesAllMatching=true);
+
+  outer Modelica.Fluid.System system;
+
+  // ============================================================================
+  // CONNECTORS
+  // ============================================================================
+
+  // Fluid in/out
+  Modelica.Fluid.Interfaces.FluidPort_a port_a(redeclare package Medium = Medium)
+    "Hot water inlet from valve"
+    annotation (Placement(transformation(extent={{-110,-10},{-90,10}})));
+
+  Modelica.Fluid.Interfaces.FluidPort_b port_b(redeclare package Medium = Medium)
+    "Return water outlet"
+    annotation (Placement(transformation(extent={{90,-10},{110,10}})));
+
+  // Thermal output to zone (combined convective + radiative)
+  Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_b port_zone
+    "Combined heat port connection to building zone"
+    annotation (Placement(transformation(extent={{-10,90},{10,110}})));
+
+  // ============================================================================
+  // RADIATOR PARAMETERS (EN442-2 Standard)
+  // ============================================================================
+
+  parameter Modelica.Units.SI.Power Q_flow_nominal = 1500
+    "Nominal heating power at design conditions [W]"
+    annotation (Dialog(group="Radiator Design"));
+
+  parameter Modelica.Units.SI.Temperature T_a_nominal = 343.15
+    "Nominal water inlet temperature (70°C)"
+    annotation (Dialog(group="Radiator Design"));
+
+  parameter Modelica.Units.SI.Temperature T_b_nominal = 323.15
+    "Nominal water outlet temperature (50°C)"
+    annotation (Dialog(group="Radiator Design"));
+
+  parameter Modelica.Units.SI.Temperature TAir_nominal = 293.15
+    "Nominal room air temperature (20°C)"
+    annotation (Dialog(group="Radiator Design"));
+
+  parameter Real fraRad = 0.35
+    "Fraction of radiative heat transfer (typically 0.30-0.40)"
+    annotation (Dialog(group="Radiator Design"));
+
+  parameter Integer nEle = 5
+    "Number of radiator elements for discretization"
+    annotation (Dialog(group="Advanced"));
+
+  // ============================================================================
+  // COMPONENTS
+  // ============================================================================
+
+  // EN442-2 Standard Radiator
+  IBPSA.Fluid.HeatExchangers.Radiators.RadiatorEN442_2 radiator(
+    redeclare package Medium = Medium,
+    Q_flow_nominal = Q_flow_nominal,
+    T_a_nominal = T_a_nominal,
+    T_b_nominal = T_b_nominal,
+    TAir_nominal = TAir_nominal,
+    fraRad = fraRad,
+    nEle = nEle,
+    energyDynamics = Modelica.Fluid.Types.Dynamics.FixedInitial)
+    "EN442-2 compliant radiator with convective and radiative heat transfer"
+    annotation (Placement(transformation(extent={{-10,-30},{10,-10}})));
+
+  // Thermal collector to combine convective and radiative heat
+  Modelica.Thermal.HeatTransfer.Components.ThermalCollector thermalCollector(m=2)
+    "Combines convective and radiative heat into single zone connection"
+    annotation (Placement(transformation(
+        extent={{-10,-10},{10,10}},
+        rotation=90,
+        origin={0,60})));
+
+equation
+  // ============================================================================
+  // FLUID CONNECTIONS
+  // ============================================================================
+  // Direct pass-through from port_a to radiator to port_b
+  connect(port_a, radiator.port_a)
+    annotation (Line(points={{-100,0},{-10,0},{-10,-20}}, color={0,127,255}));
+  connect(radiator.port_b, port_b)
+    annotation (Line(points={{10,-20},{10,0},{100,0}}, color={0,127,255}));
+
+  // ============================================================================
+  // THERMAL CONNECTIONS
+  // ============================================================================
+  // Radiator has two heat ports: heatPortCon (convective) and heatPortRad (radiative)
+  // These are combined by the thermal collector into a single heat port
+
+  connect(radiator.heatPortCon, thermalCollector.port_a[1])
+    annotation (Line(points={{-2,-12},{-2,60},{-9.75,60}},
+                                                        color={191,0,0}));
+  connect(radiator.heatPortRad, thermalCollector.port_a[2])
+    annotation (Line(points={{2,-12},{2,60},{-10.25,60}},
+                                                     color={191,0,0}));
+  connect(thermalCollector.port_b, port_zone)
+    annotation (Line(points={{10,60},{10,80},{0,80},{0,100}},
+                                              color={191,0,0}));
+
+  annotation (
+    Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
+         graphics={
+        Rectangle(
+          extent={{-100,-100},{100,100}},
+          lineColor={0,0,0},
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-80,-40},{80,60}},
+          lineColor={0,0,0},
+          fillColor={95,95,95},
+          fillPattern=FillPattern.Solid),
+        Line(points={{-60,40},{60,40}}, color={255,255,255}, thickness=0.5),
+        Line(points={{-60,20},{60,20}}, color={255,255,255}, thickness=0.5),
+        Line(points={{-60,0},{60,0}}, color={255,255,255}, thickness=0.5),
+        Line(points={{-60,-20},{60,-20}}, color={255,255,255}, thickness=0.5),
+        Line(points={{-70,60},{-70,-40}}, color={255,255,255}, thickness=0.5),
+        Line(points={{70,60},{70,-40}}, color={255,255,255}, thickness=0.5),
+        Ellipse(
+          extent={{-94,6},{-86,-6}},
+          lineColor={0,127,255},
+          fillColor={0,127,255},
+          fillPattern=FillPattern.Solid),
+        Ellipse(
+          extent={{86,6},{94,-6}},
+          lineColor={0,127,255},
+          fillColor={0,127,255},
+          fillPattern=FillPattern.Solid),
+        Line(points={{-90,0},{-80,0}}, color={0,127,255}, thickness=0.5),
+        Line(points={{80,0},{90,0}}, color={0,127,255}, thickness=0.5),
+        Line(points={{0,60},{0,90}}, color={191,0,0}, thickness=0.5),
+        Ellipse(
+          extent={{-6,96},{6,84}},
+          lineColor={191,0,0},
+          fillColor={191,0,0},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{-80,85},{80,65}},
+          textColor={0,0,0},
+          textString="EN442-2"),
+        Text(
+          extent={{-80,-50},{80,-70}},
+          textColor={0,0,0},
+          textString="Radiator"),
+        Text(
+          extent={{-100,-80},{100,-100}},
+          textColor={0,0,255},
+          textString="%name"),
+        Polygon(
+          points={{-4,70},{0,78},{4,70},{-4,70}},
+          lineColor={191,0,0},
+          fillColor={191,0,0},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{-60,30},{-20,10}},
+          textColor={255,255,255},
+          textString="Conv"),
+        Text(
+          extent={{20,30},{60,10}},
+          textColor={255,255,255},
+          textString="Rad")}),
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}})),
+    Documentation(info="<html>
+<h4>SystemWithZoneAndHydronics_Updated</h4>
+<p>Updated hydronic system interface using EN442-2 standard radiator.</p>
+
+<h5>Key Features:</h5>
+<ul>
+<li><b>EN442-2 Radiator:</b> European standard compliant radiator model</li>
+<li><b>Dual Heat Transfer:</b> Separates convective (65%) and radiative (35%) components</li>
+<li><b>Thermal Collector:</b> Combines both heat modes into single zone connection</li>
+<li><b>Dynamic Response:</b> Includes thermal mass of water and radiator body</li>
+<li><b>Temperature-Dependent:</b> Heat transfer varies with water and room temperatures</li>
+</ul>
+
+<h5>Radiator Behavior:</h5>
+<p>The radiator is discretized into <code>nEle</code> elements (default 5) along the water flow path.
+Each element exchanges heat with the room through:</p>
+<ul>
+<li><b>Convective heat:</b> Q_con = (1-fraRad) × UA × ΔT^n (to room air)</li>
+<li><b>Radiative heat:</b> Q_rad = fraRad × UA × ΔT^n (to room surfaces)</li>
+</ul>
+<p>where n ≈ 1.24 is the heat transfer exponent.</p>
+
+<h5>Nominal Conditions (Typical):</h5>
+<ul>
+<li>Power: 1500 W</li>
+<li>Supply: 70°C (343.15 K)</li>
+<li>Return: 50°C (323.15 K)</li>
+<li>Room: 20°C (293.15 K)</li>
+<li>Radiative fraction: 35%</li>
+</ul>
+
+<h5>Advantages over WaterToHeatPort:</h5>
+<ul>
+<li>Physically realistic heat transfer characteristics</li>
+<li>Temperature-dependent performance</li>
+<li>Proper thermal dynamics with mass effects</li>
+<li>Separate convective and radiative paths</li>
+<li>Standard-compliant design calculations</li>
+</ul>
+
+<h5>Connection:</h5>
+<p>Connect <code>port_zone</code> directly to the <code>heatPort</code> of a HeatedZone.
+The thermal collector automatically combines convective and radiative heat.</p>
+</html>"));
+end SystemWithZoneAndHydronics_Updated;

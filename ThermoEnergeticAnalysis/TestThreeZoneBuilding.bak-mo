@@ -1,0 +1,111 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model TestThreeZoneBuilding
+  "Test model for ThreeZoneBuilding with heating source"
+
+  // NOTE: Do NOT declare 'inner system' here - ThreeZoneBuilding already has it
+
+  replaceable package Medium = Modelica.Media.Water.StandardWater
+    annotation (choicesAllMatching=true);
+  // ============================================================================
+  // THE BUILDING
+  // ============================================================================
+  ThreeZoneBuilding building(
+    redeclare package Medium = Medium,
+    // Zone areas
+    AZone_cellar = 80,
+    AZone_living = 100,
+    AZone_roof = 60,
+    // Zone heights
+    hZone_cellar = 2.2,
+    hZone_living = 2.5,
+    hZone_roof = 2.3,
+    // Temperature setpoints
+    TRef_cellar = 288.15,  // 15°C
+    TRef_living = 293.15,  // 20°C
+    TRef_roof = 293.15,    // 20°C
+    // Initial temperatures
+    TZoneInit_cellar = 283.15,  // 10°C
+    TZoneInit_living = 288.15,  // 15°C
+    TZoneInit_roof = 285.15,    // 12°C
+    // Outdoor temperature
+    TOutdoor = 278.15,  // 5°C
+    // Heating enabled
+    cellarHeat = true,
+    roofHeat = true)
+    annotation (Placement(transformation(extent={{-20,-40},{60,40}})));
+
+  // ============================================================================
+  // HEATING SOURCE (simulated boiler/heat pump supply)
+  // ============================================================================
+
+  // Supply boundary (hot water source)
+  Modelica.Fluid.Sources.Boundary_pT supply(
+    redeclare package Medium = Medium,
+    use_T_in = true,
+    p = 300000,  // 3 bar
+    nPorts = 1)
+    "Hot water supply from heating source"
+    annotation (Placement(transformation(extent={{-120,-10},{-100,10}})));
+
+  // Return boundary (sink with controlled mass flow)
+  Modelica.Fluid.Sources.MassFlowSource_T return_sink(
+    redeclare package Medium = Medium,
+    use_m_flow_in = true,
+    T = 303.15,  // 30°C default return temp
+    nPorts = 1)
+    "Return water sink (creates flow through system)"
+    annotation (Placement(transformation(extent={{10,-10},{-10,10}},
+        rotation=180,
+        origin={-110,-50})));
+
+  // ============================================================================
+  // INPUT SIGNALS
+  // ============================================================================
+
+  // Supply temperature (60°C constant)
+  Modelica.Blocks.Sources.Constant supplyTemp(k=333.15)
+    "Supply water temperature (60°C)"
+    annotation (Placement(transformation(extent={{-180,20},{-160,40}})));
+
+  // Mass flow rate (negative for sink convention)
+  Modelica.Blocks.Sources.Constant massFlowRate(k=-0.1)
+    "Total mass flow rate (0.1 kg/s = 6 L/min)"
+    annotation (Placement(transformation(extent={{-180,-40},{-160,-20}})));
+
+  // ============================================================================
+  // OUTPUT MONITORING (in degrees Celsius for easy plotting)
+  // ============================================================================
+
+  Real T_cellar_degC = building.TZone_cellar - 273.15 "Cellar temp in °C";
+  Real T_living_degC = building.TZone_living - 273.15 "Living temp in °C";
+  Real T_roof_degC = building.TZone_roof - 273.15 "Roof temp in °C";
+
+equation
+  // Supply connections
+  connect(supplyTemp.y, supply.T_in)
+    annotation (Line(points={{-159,30},{-140,30},{-140,4},{-122,4}}, color={0,0,127}));
+
+  connect(supply.ports[1], building.port_a)
+    annotation (Line(points={{-100,0},{-60,0},{-60,20},{-20,20}}, color={0,127,255}));
+
+  // Return connections
+  connect(massFlowRate.y, return_sink.m_flow_in)
+    annotation (Line(points={{-159,-30},{-140,-30},{-140,-58},{-120,-58}}, color={0,0,127}));
+
+  connect(building.port_b, return_sink.ports[1])
+    annotation (Line(points={{-20,-11.1111},{-60,-11.1111},{-60,-50},{-100,-50}},
+                                                                        color={0,127,255}));
+
+  annotation (
+    experiment(
+      StartTime=0,
+      StopTime=259200,  // 3 days
+      Interval=60,
+      Tolerance=1e-06),
+    Documentation(info="<html>
+<h4>Test Model for ThreeZoneBuilding</h4>
+<p>Supply: 60°C, 0.1 kg/s. Outdoor: 5°C. Duration: 3 days.</p>
+<p><b>Expected:</b> All zones heat up toward setpoints.</p>
+</html>"),
+    Diagram(coordinateSystem(extent={{-200,-100},{140,100}})));
+end TestThreeZoneBuilding;

@@ -1,0 +1,260 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model SimpleCHP
+  "Simplified CHP (Combined Heat and Power) model for Dymola - based on SimulationX physics"
+
+  // ============================================================================
+  // DESCRIPTION
+  // ============================================================================
+  // This is a simplified CHP model that:
+  // - Produces both heat (QHeat) and electricity (PElectrical)
+  // - Has modulating power output (30-100%)
+  // - Calculates supply temperature based on heat added to water flow
+  // - Includes thermal dynamics (first-order response)
+  //
+  // Based on SimulationX GreenCity CHP model physics
+  // ============================================================================
+
+  // ============================================================================
+  // PARAMETERS - CHP Specifications
+  // ============================================================================
+
+  parameter Modelica.Units.SI.Power QHeat_nominal = 12500
+    "Nominal thermal power output [W] (e.g., 12.5 kW)"
+    annotation(Dialog(group="Power Rating"));
+
+  parameter Modelica.Units.SI.Power PElec_nominal = 5000
+    "Nominal electrical power output [W] (e.g., 5 kW)"
+    annotation(Dialog(group="Power Rating"));
+
+  parameter Real eta_heat_nominal = 0.60
+    "Nominal thermal efficiency [-] (typically 0.55-0.65)"
+    annotation(Dialog(group="Efficiency"));
+
+  parameter Real eta_elec_nominal = 0.25
+    "Nominal electrical efficiency [-] (typically 0.20-0.30)"
+    annotation(Dialog(group="Efficiency"));
+
+  parameter Real ModulationMin = 0.30
+    "Minimum modulation (30% = cannot go below 30% power)"
+    annotation(Dialog(group="Control"));
+
+  parameter Modelica.Units.SI.Temperature TFlow_max = 363.15
+    "Maximum flow temperature [K] (90°C)"
+    annotation(Dialog(group="Temperature Limits"));
+
+  parameter Modelica.Units.SI.Time tau = 60
+    "Thermal time constant [s] (how fast CHP responds)"
+    annotation(Dialog(group="Dynamics"));
+
+  // Medium properties (water)
+  parameter Modelica.Units.SI.SpecificHeatCapacity cp = 4180
+    "Specific heat capacity of water [J/(kg·K)]";
+  parameter Modelica.Units.SI.Density rho = 1000
+    "Density of water [kg/m³]";
+
+  // ============================================================================
+  // INPUTS
+  // ============================================================================
+
+  Modelica.Blocks.Interfaces.BooleanInput CHPon
+    "CHP on/off command"
+    annotation(Placement(transformation(extent={{-140,60},{-100,100}}),
+        iconTransformation(extent={{-140,60},{-100,100}})));
+
+  Modelica.Blocks.Interfaces.RealInput Modulation(min=0, max=1)
+    "Power modulation signal [0-1] (0=min power, 1=max power)"
+    annotation(Placement(transformation(extent={{-140,10},{-100,50}}),
+        iconTransformation(extent={{-140,10},{-100,50}})));
+
+  Modelica.Blocks.Interfaces.RealInput TReturn_degC
+    "Return water temperature [°C]"
+    annotation(Placement(transformation(extent={{-140,-50},{-100,-10}}),
+        iconTransformation(extent={{-140,-50},{-100,-10}})));
+
+  Modelica.Blocks.Interfaces.RealInput qv_l_per_min
+    "Volume flow rate [L/min]"
+    annotation(Placement(transformation(extent={{-140,-100},{-100,-60}}),
+        iconTransformation(extent={{-140,-100},{-100,-60}})));
+
+  // ============================================================================
+  // OUTPUTS
+  // ============================================================================
+
+  Modelica.Blocks.Interfaces.RealOutput TSupply_degC
+    "Supply water temperature [°C]"
+    annotation(Placement(transformation(extent={{100,60},{120,80}}),
+        iconTransformation(extent={{100,60},{120,80}})));
+
+  Modelica.Blocks.Interfaces.RealOutput QHeat_kW
+    "Actual thermal power output [kW]"
+    annotation(Placement(transformation(extent={{100,20},{120,40}}),
+        iconTransformation(extent={{100,20},{120,40}})));
+
+  Modelica.Blocks.Interfaces.RealOutput PElec_kW
+    "Actual electrical power output [kW]"
+    annotation(Placement(transformation(extent={{100,-20},{120,0}}),
+        iconTransformation(extent={{100,-20},{120,0}})));
+
+  Modelica.Blocks.Interfaces.RealOutput PFuel_kW
+    "Fuel power consumption [kW]"
+    annotation(Placement(transformation(extent={{100,-60},{120,-40}}),
+        iconTransformation(extent={{100,-60},{120,-40}})));
+
+  Modelica.Blocks.Interfaces.RealOutput Efficiency
+    "Overall efficiency (heat+elec)/fuel [-]"
+    annotation(Placement(transformation(extent={{100,-100},{120,-80}}),
+        iconTransformation(extent={{100,-100},{120,-80}})));
+
+  // ============================================================================
+  // INTERNAL VARIABLES
+  // ============================================================================
+
+protected
+  Real ModulationActual "Actual modulation (limited to min-max range)";
+  Modelica.Units.SI.Power QHeat_target "Target heat power [W]";
+  Modelica.Units.SI.Power QHeat_actual(start=0) "Actual heat power [W]";
+  Modelica.Units.SI.Power PElec_actual "Actual electrical power [W]";
+  Modelica.Units.SI.Power PFuel_actual "Actual fuel power [W]";
+  Modelica.Units.SI.Temperature TReturn_K "Return temperature [K]";
+  Modelica.Units.SI.Temperature TSupply_K "Supply temperature [K]";
+  Modelica.Units.SI.VolumeFlowRate qv "Volume flow [m³/s]";
+  Modelica.Units.SI.MassFlowRate m_flow "Mass flow [kg/s]";
+  Real eta_heat "Actual thermal efficiency";
+  Real eta_elec "Actual electrical efficiency";
+
+equation
+  // ============================================================================
+  // UNIT CONVERSIONS
+  // ============================================================================
+  TReturn_K = TReturn_degC + 273.15;
+  qv = qv_l_per_min / 60000;  // L/min to m³/s
+  m_flow = rho * qv;
+
+  // ============================================================================
+  // MODULATION LOGIC
+  // ============================================================================
+  // When ON: modulation is limited between ModulationMin and 1.0
+  // When OFF: modulation is 0
+  ModulationActual = if CHPon then max(ModulationMin, min(1.0, Modulation)) else 0;
+
+  // ============================================================================
+  // EFFICIENCY CALCULATION
+  // ============================================================================
+  // Efficiency improves slightly at lower return temperatures (condensing effect)
+  // Simplified linear model: eta = eta_nominal * (1 + 0.05 * (50 - TReturn_degC) / 50)
+  // This gives ~5% boost at 0°C return, nominal at 50°C return
+  eta_heat = eta_heat_nominal * (1 + 0.05 * max(0, min(1, (323.15 - TReturn_K) / 50)));
+  eta_elec = eta_elec_nominal;  // Electrical efficiency relatively constant
+
+  // ============================================================================
+  // POWER CALCULATIONS
+  // ============================================================================
+  QHeat_target = ModulationActual * QHeat_nominal;
+
+  // First-order dynamics for thermal response
+  tau * der(QHeat_actual) = QHeat_target - QHeat_actual;
+
+  // Electrical power proportional to thermal power
+  PElec_actual = (QHeat_actual / QHeat_nominal) * PElec_nominal;
+
+  // Fuel power from efficiency
+  PFuel_actual = if CHPon and (eta_heat + eta_elec) > 0.01 then
+                   (QHeat_actual + PElec_actual) / (eta_heat + eta_elec)
+                 else 0;
+
+  // ============================================================================
+  // SUPPLY TEMPERATURE CALCULATION
+  // ============================================================================
+  // Q = m_flow * cp * (TSupply - TReturn)
+  // TSupply = TReturn + Q / (m_flow * cp)
+
+  if m_flow > 1e-6 then
+    TSupply_K = min(TFlow_max, TReturn_K + QHeat_actual / (m_flow * cp));
+  else
+    // No flow: temperature rises to max (safety limit)
+    TSupply_K = if CHPon then TFlow_max else TReturn_K;
+  end if;
+
+  // ============================================================================
+  // OUTPUTS
+  // ============================================================================
+  TSupply_degC = TSupply_K - 273.15;
+  QHeat_kW = QHeat_actual / 1000;
+  PElec_kW = PElec_actual / 1000;
+  PFuel_kW = PFuel_actual / 1000;
+  Efficiency = if PFuel_actual > 100 then (QHeat_actual + PElec_actual) / PFuel_actual else 0;
+
+  annotation(
+    Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
+      graphics={
+        Rectangle(
+          extent={{-100,100},{100,-100}},
+          lineColor={0,0,0},
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-80,80},{80,-60}},
+          lineColor={255,128,0},
+          fillColor={255,200,150},
+          fillPattern=FillPattern.Solid,
+          lineThickness=1),
+        Text(
+          extent={{-60,60},{60,20}},
+          textColor={255,128,0},
+          textString="CHP",
+          textStyle={TextStyle.Bold}),
+        Rectangle(
+          extent={{-60,10},{-20,-30}},
+          lineColor={255,0,0},
+          fillColor={255,100,100},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{-55,5},{-25,-25}},
+          textColor={255,255,255},
+          textString="Q"),
+        Rectangle(
+          extent={{20,10},{60,-30}},
+          lineColor={255,215,0},
+          fillColor={255,255,100},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{25,5},{55,-25}},
+          textColor={100,100,0},
+          textString="P"),
+        Line(points={{0,-60},{0,-80}}, color={0,0,255}, thickness=1),
+        Line(points={{-40,-60},{-40,-80}}, color={0,0,255}, thickness=1),
+        Line(points={{40,-60},{40,-80}}, color={255,0,0}, thickness=1),
+        Text(
+          extent={{-60,-45},{60,-58}},
+          textColor={0,0,0},
+          textString="Heat + Power"),
+        Text(
+          extent={{-100,100},{100,82}},
+          textColor={0,0,255},
+          textString="%name")}),
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-120,-120},{120,120}})),
+    Documentation(info="<html>
+<h4>SimpleCHP - Combined Heat and Power Unit</h4>
+<p>Simplified CHP model based on SimulationX GreenCity physics.</p>
+
+<h5>Features:</h5>
+<ul>
+<li>Produces both thermal and electrical power</li>
+<li>Modulating output (30-100% of nominal)</li>
+<li>First-order thermal dynamics</li>
+<li>Efficiency depends on return temperature</li>
+</ul>
+
+<h5>Typical Values:</h5>
+<ul>
+<li>QHeat_nominal: 12.5 kW thermal</li>
+<li>PElec_nominal: 5 kW electrical</li>
+<li>eta_heat: 60%</li>
+<li>eta_elec: 25%</li>
+<li>Total efficiency: 85%</li>
+</ul>
+
+<h5>Usage:</h5>
+<p>Connect TReturn_degC from building return, get TSupply_degC to building supply.</p>
+</html>"));
+end SimpleCHP;

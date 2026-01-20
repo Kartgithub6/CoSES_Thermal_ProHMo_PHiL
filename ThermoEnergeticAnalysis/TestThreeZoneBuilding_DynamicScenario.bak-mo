@@ -1,0 +1,154 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model TestThreeZoneBuilding_DynamicScenario
+  "Test with dramatic environmental changes to show system response"
+
+  inner Modelica.Fluid.System system annotation(Placement(visible=true,transformation(origin={-170,170},extent={{-10,-10},{10,10}},rotation=0)));
+
+  CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis.ThreeZoneBuilding_PHiL_new building(
+    k_PI=0.8,
+    Ti_PI=200,
+    cellarHeat=true,
+    roofHeat=true) annotation(Placement(visible=true,transformation(origin={0,2},extent={{-50,-50},{50,50}},rotation=0)));
+
+  // SCENARIO: Extreme weather event
+  Modelica.Blocks.Sources.TimeTable T_supply(table=[
+    0,65;
+    3600,65;
+    7200,70;
+    10800,60;
+    14400,65;
+    21600,65]     // Hour 2: Boiler increases
+                  // Hour 3: Boiler failure!
+                  // Hour 4: Boiler fixed
+)              annotation(Placement(visible=true,transformation(origin={-170,100},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // SCENARIO: Cold snap with recovery
+  Modelica.Blocks.Sources.TimeTable T_ambient(table=[
+    0,10;
+    3600,5;
+    7200,-10;
+    14400,-5;
+    21600,0;
+    43200,10]     // Mild morning
+                  // Temperature dropping
+                  // Hour 2: COLD SNAP! -10°C
+                  // Hour 4: Slowly warming
+                  // Hour 6: Recovery
+)              annotation(Placement(visible=true,transformation(origin={-170,70},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Flow rate (ignored - pressure driven)
+  Modelica.Blocks.Sources.Constant flowRate(k=8.0) annotation(Placement(visible=true,transformation(origin={-170,40},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // SCENARIO: Party in living room!
+  Modelica.Blocks.Sources.TimeTable occupancy_living(table=[
+    0,2;
+    10800,8;
+    18000,2;
+    43200,0;
+    50400,2]      // Normal: 2 people
+                  // Hour 3: PARTY! 8 people show up
+                  // Hour 5: Party ends
+                  // Hour 12: Everyone asleep
+)             annotation(Placement(visible=true,transformation(origin={-170,10},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Cellar: Someone starts doing laundry
+  Modelica.Blocks.Sources.TimeTable occupancy_cellar(table=[
+    0,0;
+    7200,1;
+    10800,0]      // Hour 2: Doing laundry
+)             annotation(Placement(visible=true,transformation(origin={-170,-20},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // Roof: Office hours
+  Modelica.Blocks.Sources.TimeTable occupancy_roof(table=[
+    0,0;
+    28800,1;
+    61200,0]      // Hour 8: Work starts
+)             annotation(Placement(visible=true,transformation(origin={-170,-50},extent={{-10,-10},{10,10}},rotation=0)));
+
+  // SCENARIO: Cooking + devices
+  Modelica.Blocks.Sources.TimeTable appliances_living(table=[
+    0,200;
+    10800,1500;
+    14400,400;
+    18000,200]    // Baseline
+                  // Hour 3: Party cooking! Multiple ovens
+                  // Hour 4: Cleaning up
+)               annotation(Placement(visible=true,transformation(origin={170,10},extent={{-10,-10},{10,10}},rotation=180)));
+
+  // Cellar: Washer + dryer
+  Modelica.Blocks.Sources.TimeTable appliances_cellar(table=[
+    0,50;
+    7200,2000;
+    10800,50]     // Hour 2: Washer + dryer running
+)              annotation(Placement(visible=true,transformation(origin={170,-20},extent={{-10,-10},{10,10}},rotation=180)));
+
+  // Roof: Computer setup
+  Modelica.Blocks.Sources.TimeTable appliances_roof(table=[
+    0,50;
+    28800,400;
+    61200,50]     // Hour 8: Computers + monitors on
+)              annotation(Placement(visible=true,transformation(origin={170,-50},extent={{-10,-10},{10,10}},rotation=180)));
+
+  // MONITORING OUTPUTS
+  Real T_living_degC=building.T_roomIs_degC "Living room temperature";
+  Real T_cellar_degC=building.T_cellarIs_degC "Cellar temperature";
+  Real T_roof_degC=building.T_roofIs_degC "Roof/attic temperature";
+  Real T_return_degC=building.STM_HCRL_Set_degC "System return temperature";
+  Real flowRate_lpm=building.SFW_HCRLbM_Set_l_per_min "Total flow rate";
+  Real valve_cellar=building.valve_cellar_opening "Cellar valve position (0-1)";
+  Real valve_living=building.valve_living_opening "Living valve position (0-1)";
+  Real valve_roof=building.valve_roof_opening "Roof valve position (0-1)";
+
+  // ERROR TRACKING
+  Real error_living=21.0-T_living_degC "Living temp error (positive = too cold)";
+  Real error_cellar=15.0-T_cellar_degC "Cellar temp error";
+  Real error_roof=21.0-T_roof_degC "Roof temp error";
+
+  // THERMAL POWER (approximate)
+  Real P_heating_living_kW=valve_living*1.5 "Heating power to living [kW]";
+  Real P_heating_cellar_kW=valve_cellar*1.5 "Heating power to cellar [kW]";
+  Real P_heating_roof_kW=valve_roof*1.5 "Heating power to roof [kW]";
+  Real P_total_kW=P_heating_living_kW+P_heating_cellar_kW+P_heating_roof_kW "Total heating power [kW]";
+
+equation
+  connect(T_supply.y,building.STM_HCVLaM_degC) annotation(Line(points={{-159,
+          100},{-90,100},{-90,58},{-120,58}},                                                                  color={0,0,127}));
+  connect(T_ambient.y,building.T_ambient_degC) annotation(Line(points={{-159,70},
+          {-90,70},{-90,8},{-120,8}},                                                                      color={0,0,127}));
+  connect(flowRate.y,building.SFW_HCRLbM_l_per_min) annotation(Line(points={{-159,40},
+          {-90,40},{-90,26},{-120,26}},                                                                           color={0,0,127}));
+
+  connect(occupancy_living.y,building.nPersons_living_in) annotation(Line(points={{-159,10},
+          {-90,10},{-90,-4},{-120,-4}},                                                                                 color={0,0,127}));
+  connect(occupancy_cellar.y,building.nPersons_cellar_in) annotation(Line(points={{-159,
+          -20},{-90,-20},{-90,-23},{-120,-23}},                                                                             color={0,0,127}));
+  connect(occupancy_roof.y,building.nPersons_roof_in) annotation(Line(points={{-159,
+          -50},{-90,-50},{-90,-44},{-120,-44}},                                                                         color={0,0,127}));
+
+  connect(appliances_living.y,building.P_appliances_living_W_in) annotation(Line(points={{159,10},
+          {90,10},{90,-6},{154,-6}},                                                                                       color={0,0,127}));
+  connect(appliances_cellar.y,building.P_appliances_cellar_W_in) annotation(Line(points={{159,-20},
+          {90,-20},{90,9},{155,9}},                                                                                            color={0,0,127}));
+  connect(appliances_roof.y,building.P_appliances_roof_W_in) annotation(Line(points={{159,-50},
+          {90,-50},{90,-24},{154,-24}},                                                                                    color={0,0,127}));
+
+  annotation(
+    experiment(StartTime=0,StopTime=86400,Interval=30,Tolerance=1e-06,__Dymola_Algorithm="Dassl"),
+    Documentation(info="<html>
+<h4>Dramatic Scenario Test</h4>
+<p>This model demonstrates system response to extreme events:</p>
+<ul>
+<li><b>Hour 2</b>: Cold snap (-10°C) + laundry running</li>
+<li><b>Hour 3</b>: Boiler failure + party (8 people) + heavy cooking</li>
+<li><b>Hour 4</b>: Boiler recovers, temperature rising</li>
+<li><b>Hour 8</b>: Office starts (roof zone)</li>
+</ul>
+<p><b>Watch for:</b></p>
+<ul>
+<li>Valve positions saturating (stuck at 1.0 = full open)</li>
+<li>Temperature drops during boiler failure</li>
+<li>Recovery time after disturbances</li>
+<li>Flow rate changes with demand</li>
+</ul>
+</html>"));
+end TestThreeZoneBuilding_DynamicScenario;

@@ -1,0 +1,104 @@
+within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+model TestThreeZoneBuilding_PHiL
+  "Standalone test for ThreeZoneBuilding_PHiL - includes input sources"
+
+  // ============================================================================
+  // THE PHiL MODEL
+  // ============================================================================
+  // ThreeZoneBuilding_PHiL is in the same package (ThermoEnergeticAnalysis)
+  // ============================================================================
+
+  ThreeZoneBuilding_PHiL building(
+    AZone_cellar = 80,
+    AZone_living = 100,
+    AZone_roof = 60,
+    hZone_cellar = 2.2,
+    hZone_living = 2.5,
+    hZone_roof = 2.3,
+    TZoneInit_cellar = 288.15,  // 15°C
+    TZoneInit_living = 294.15,  // 21°C (at setpoint)
+    TZoneInit_roof = 289.15,    // 16°C
+    TRef_cellar = 288.15,       // 15°C
+    TRef_living = 294.15,       // 21°C
+    TRef_roof = 294.15,         // 21°C
+    TOutdoor = 278.15,          // 5°C
+    cellarHeat = true,
+    roofHeat = true)
+    annotation (Placement(transformation(extent={{0,-50},{100,70}})));
+
+  // ============================================================================
+  // INPUT SOURCES (simulating CoSES lab signals)
+  // ============================================================================
+
+  // Supply temperature: 60°C constant (typical heating supply)
+  Modelica.Blocks.Sources.Constant supplyTemp(k=60)
+    "STM_HCVLaM_degC - Supply water temperature [°C]"
+    annotation (Placement(transformation(extent={{-80,50},{-60,70}})));
+
+  // Flow rate: 6 L/min constant
+  Modelica.Blocks.Sources.Constant flowRate(k=6)
+    "SFW_HCRLbM_l_per_min - Volume flow rate [L/min]"
+    annotation (Placement(transformation(extent={{-80,10},{-60,30}})));
+
+  // Ambient temperature: 5°C constant (winter condition)
+  Modelica.Blocks.Sources.Constant ambientTemp(k=5)
+    "T_ambient_degC - Outdoor temperature [°C]"
+    annotation (Placement(transformation(extent={{-80,-30},{-60,-10}})));
+
+  // ============================================================================
+  // CONVENIENT OUTPUT ALIASES (for easy plotting in Dymola)
+  // ============================================================================
+
+  Real T_living_degC = building.T_roomIs_degC "Living zone [°C]";
+  Real T_cellar_degC = building.T_cellarIs_degC "Cellar [°C]";
+  Real T_roof_degC = building.T_roofIs_degC "Roof [°C]";
+  Real T_return_degC = building.STM_HCRL_Set_degC "Return water [°C]";
+  Real qv_l_per_min = building.SFW_HCRLbM_Set_l_per_min "Flow setpoint [L/min]";
+
+equation
+  // Connect input sources to PHiL model
+  connect(supplyTemp.y, building.STM_HCVLaM_degC)
+    annotation (Line(points={{-59,60},{-30,60},{-30,30},{0,30}}, color={0,0,127}));
+  connect(flowRate.y, building.SFW_HCRLbM_l_per_min)
+    annotation (Line(points={{-59,20},{-30,20},{-30,10},{0,10}}, color={0,0,127}));
+  connect(ambientTemp.y, building.T_ambient_degC)
+    annotation (Line(points={{-59,-20},{-30,-20},{-30,-2},{0,-2}}, color={0,0,127}));
+
+  annotation (
+    experiment(
+      StartTime=0,
+      StopTime=259200,
+      Interval=60,
+      Tolerance=1e-06),
+    Documentation(info="<html>
+<h4>Test Model for ThreeZoneBuilding_PHiL</h4>
+
+<h5>Test Conditions:</h5>
+<ul>
+<li>Supply temperature: 60°C (constant)</li>
+<li>Flow rate: 6 L/min (0.1 kg/s)</li>
+<li>Outdoor temperature: 5°C (winter)</li>
+<li>Duration: 3 days (259200 s)</li>
+</ul>
+
+<h5>Expected Results (similar to SimX):</h5>
+<ul>
+<li>Living zone: 21°C → stable at ~21°C (at setpoint)</li>
+<li>Cellar: 15°C → stable at ~15°C (at setpoint)</li>
+<li>Roof: 16°C → rising to ~21°C (heating up)</li>
+<li>Return water: ~35-45°C (depends on heat extraction)</li>
+</ul>
+
+<h5>Variables to Plot:</h5>
+<ul>
+<li>T_living_degC, T_cellar_degC, T_roof_degC</li>
+<li>T_return_degC</li>
+<li>qv_l_per_min</li>
+</ul>
+
+<h5>Comparison with SimX_SF1_PHiL:</h5>
+<p>This test should produce similar zone temperature trajectories as
+the supervisor's SimX model with comparable building parameters.</p>
+</html>"),
+    Diagram(coordinateSystem(extent={{-100,-60},{140,100}})));
+end TestThreeZoneBuilding_PHiL;
