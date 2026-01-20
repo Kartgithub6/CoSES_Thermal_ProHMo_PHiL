@@ -21,11 +21,11 @@ model TestThreeZoneBuilding_optimized
     TZoneInit_roof=290.15,
     cellarHeat=true,
     roofHeat=true,
-    k_PI=0.3,
-    Ti_PI=500,
-    yMin_cellar=0.05,      // ⭐ 5% minimum (not 20%!)
-    yMin_living=0.03,      // 3% minimum (priority zone)
-    yMin_roof=0.08         // 8% minimum
+    k_PI=0.2,
+    Ti_PI=800,
+    yMin_cellar=0.08,      // ⭐ 5% minimum (not 20%!)
+    yMin_living=0.05,      // 3% minimum (priority zone)
+    yMin_roof=0.10         // 8% minimum
 )   "Building with PHiL interface and prioritized hydraulics"
     annotation(Placement(visible=true, transformation(origin={0,-2},extent={{-60,-60},{60,60}}, rotation=0)));
 

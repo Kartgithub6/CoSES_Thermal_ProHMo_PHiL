@@ -2,15 +2,12 @@ within CoSES_Thermal_ProHMo_PHiL.BuildingSystem.Building;
 model HeatedZone
   import Modelica.Constants.pi;
 
-    // 16 Dec 20.00
+
   inner Modelica.Fluid.System system(
     allowFlowReversal = false,
     energyDynamics = Modelica.Fluid.Types.Dynamics.SteadyState,
     massDynamics   = Modelica.Fluid.Types.Dynamics.SteadyState);
 
-  /* // 14 Dec 11.00
-  inner Modelica.Fluid.System system;
-*/
 
   model InnerMass "Properties of an inner Mass V1.0"
     parameter Real V( quantity="Geometry.Volume", displayUnit="m3") = 6 "Inner additional volumes (e.g. inner walls)";
@@ -24,8 +21,8 @@ protected
     each rho = rhoMass1,
     each V   = VMass1)
     "Inner masses model"
-    annotation(Placement(transformation(extent={{-98,80},{-78,90}})));
-  // 15 Dec 11.00 moved to public
+    annotation(Placement(transformation(extent={{-98,86},{-78,96}})));
+
 public
   Boundary Boundaries[Bound](
     // 03 Dec 18.00 added
@@ -75,13 +72,12 @@ public
     TBoundOut = TAmbientBound*/
 
 )   "Boundary model"
-    annotation(Placement(transformation(extent={{-128,80},{-108,90}})));
+    annotation(Placement(transformation(extent={{-126,86},{-106,96}})));
 
   // ------------------------------------------------------------------
   // Boundary result variables needed by equations later in the model
   // (must be declared here so they exist when used)
   // ------------------------------------------------------------------
-  // 16 Dec 15.00
   Real TBoundIn[Bound](each start=293.15, quantity="Thermics.Temp", displayUnit="°C")
     "Inner temperature of boundary"
     annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
@@ -112,17 +108,14 @@ public
 public
   parameter Integer NumberZones = 3 "Number of Zones"
     annotation(Dialog(group="Zones", tab="Model Initialization"));
-  // 09 Dec 20.00
+
   parameter Integer ZoneIndex(
     min=1,
     max=MaxNumberZones,
     start=1) = 1
     "Zone Index (1 - Living, 2 - Cellar, 3 - Roof)"
   annotation(Dialog(group="Zones", tab="Model Initialization"));
-  /* // 09 Dec 20.00
-  parameter Integer ZoneIndex  "Zone Index (1 - Living, 2 - Cellar, 3 - Roof)"
-  annotation(Dialog(group="Zones", tab="Model Initialization"));
-  */
+
 protected
   parameter Integer MaxNumberZones=15 "Maximum number of zones"
     annotation(Dialog(group="Zones",tab="Model Initialization"));
@@ -322,7 +315,6 @@ protected
   parameter Modelica.Units.SI.Area ATot =
       ABound1 + ABound2 + ABound3
     "Total area of walls + floor + roof used in FourElements";
-  // 03 Dec 30 added
   parameter Boolean LoadCalculation = false
   "If enabled, only heating/cooling load calculation"
     annotation(Dialog(group="Calculation Mode", tab="Model Initialization"));
@@ -336,37 +328,12 @@ protected
   parameter Real lambdaBound3 = max(1e-4,
     dBound3 / (1/uBound3 - 1/alphaBoundIn3 - 1/alphaBoundOut3));
 
-/*
-  //Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a heatPort;
-  Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a heatPort
-    "Hydronic heat input"
-    annotation(
-      Placement(
-        transformation(
-          origin = {-120, 40},
-          extent = {{-10, -10}, {10, 10}},
-          rotation = 0)),
-      iconTransformation(
-        transformation(
-          origin = {-120, 40},
-          extent = {{-10, -10}, {10, 10}},
-          rotation = 0)));
-*/
 
-  /* // 09 Dec 15.00
-  Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a heatPort
-    annotation (Placement(transformation(extent={{-142,26},{-122,46}})));
-  */
 public
-    /* 16 Dec 17.00 - added as Real var. below
-  Modelica.Blocks.Interfaces.RealOutput ZoneTemperatures[min(max(NumberZones, 1), MaxNumberZones)]  "Temperatures of neighbouring building zones"
-  annotation (Placement(transformation(extent={{98,-50},{118,-30}})));
-  */
-
   Modelica.Thermal.HeatTransfer.Components.ThermalConductor
     infiltrationLoss(G=infiltrationRate*1.2*1005)
     "(1.2 kg/m³ = ρ_air, 1005 J/kg·K = cp_air) = infiltrationRate * rhoAir * cpAir"
-    annotation (Placement(transformation(extent={{54,-24},{74,-4}})));
+    annotation (Placement(transformation(extent={{54,-6},{72,12}})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedTemperature
     T_infiltration_air annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
@@ -386,20 +353,15 @@ public
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow appLoad
     "Appliance load"
     annotation (Placement(transformation(extent={{-10,54},{10,74}})));
-  /* // 15 Dec 13.00
-  Modelica.Blocks.Routing.RealPassThrough temperatureZoneSensor
-    annotation (Placement(transformation(extent={{-2,-58},{18,-38}})));
-  */
+
 public
-  // 16 Dec 17.00 - added as Real var. below
   Modelica.Blocks.Interfaces.RealOutput TZone(quantity="ThermodynamicTemperature", unit="K", displayUnit="degC") "Zone temperature" annotation (Placement(
         transformation(
         extent={{-10,-10},{10,10}},
         rotation=270,
   origin={-40,-102})));
 
-  // 13 Dec 17.00 added
-  //public // 15 Dec 11.00
+
   input Modelica.Blocks.Interfaces.RealInput TZoneRef(quantity="ThermodynamicTemperature", unit="K", displayUnit="degC") "Desired zone temperature"
   annotation (
     Placement(transformation(extent={{84,26},{112,54}})),
@@ -409,7 +371,7 @@ public
       tab="Results 1",
         __esi_showAs=ShowAs.Result));
 
-  // 20 Dec 11.00 added from below
+
   output Modelica.Blocks.Interfaces.RealOutput HeatCoolLoad(quantity="Power", unit="W", displayUnit="kW") "Heating/cooling power (positive = heating to zone)"
     annotation (
       Placement(
@@ -426,7 +388,7 @@ public
         group = "Heating and Cooling Power",
         tab = "Results 1",
         __esi_showAs = ShowAs.Result));
-  // 15 Dec 11.00 added from below for public class
+
   input Modelica.Blocks.Interfaces.RealInput WindowShading[Bound]
     "Vector for external shading of windows for each boundary (0=fully irradiated, 1=fully shaded)"
     annotation (
@@ -437,25 +399,7 @@ public
             group="Others",
             tab="Results 1",
           __esi_showAs=ShowAs.Result));
-  /* // 16 Dec 13.00  
-  Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a portInt
-    "Inner surface thermal port" annotation (Placement(transformation(
-        origin={-120,40},
-        extent={{-10,-10},{10,10}},
-        rotation=0)), iconTransformation(transformation(
-        origin={-120,40},
-        extent={{-10,-10},{10,10}},
-  rotation=0)));
-  */
-  /* // 13 Dec 17.00  
-  Modelica.Blocks.Interfaces.RealInput TZoneRef(
-    quantity="Thermics.Temp",
-    displayUnit="°C")
-    "Desired zone temperature"
-    annotation (Placement(transformation(extent={{84,26},{112,54}}),
-  iconTransformation(extent={{84,26},{112,54}})));
-  */
-  // 03 Dec 17.15 added for TZoneRef error
+
   parameter Real kTZoneRef = 1e-9
   "Very small weight for TZoneRef in dynamic mode (to keep connector used)";
 
@@ -576,34 +520,7 @@ public
       fileName = InputDataFile)
     if not DINcalc annotation (Placement(transformation(extent={{-206,-64},
             {-186,-44}})));
-  /* // 15 Dec 11.00 moving them above in public  
-  input Modelica.Blocks.Interfaces.RealInput WindowShading[Bound]
-    "Vector for external shading of windows for each boundary (0=fully irradiated, 1=fully shaded)"
-    annotation (
-  Placement(transformation(extent={{-83,-119},{-123,-79}})),
-        iconTransformation(
-            transformation(extent={{370,-20},{330,20}})),
-        Dialog(
-            group="Others",
-            tab="Results 1",
-          __esi_showAs=ShowAs.Result));
-  Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a heatPort
-    "Hydronic heat input"
-    annotation(
-      Placement(
-        transformation(
-          origin = {-120, 40},
-          extent = {{-10, -10}, {10, 10}},
-          rotation = 0)),
-      iconTransformation(
-        transformation(
-          origin = {-120, 40},
-          extent = {{-10, -10}, {10, 10}},
-          rotation = 0)));
-  */
-  // 16 Dec 17.00 - instead of connector
-  // (removed duplicate internal variable TZone; use output connector TZone instead)
-  // 16 Dec 17.00 - instead of connector
+
   Modelica.Blocks.Interfaces.RealOutput ZoneTemperatures[NumberZones]  "Temperatures of neighbouring building zones"
     annotation (Placement(transformation(extent={{98,-50},{118,-30}})));
 protected
@@ -656,42 +573,23 @@ public
     RRoofRem=0.1265217391,
     CRoof=fill(rhoBound3*cpBound3*dBound3*ABound3, 1))
     annotation (Placement(transformation(extent={{-20,-18},{28,18}})));
-  // 05 Dec 15.00 added
+
   parameter CoSES_Thermal_ProHMo_PHiL.Interfaces.EnvironmentConditions EnvironmentConditions
   annotation (Placement(
         transformation(extent={{-96,-84},{-74,-62}}), iconTransformation(extent={{-96,-84},
       {-74,-62}})));
 
-  // 26 Nov 11. added for issue with numberPerson
+  // added for issue with numberPerson
   Modelica.Blocks.Sources.Constant zeroNP(k=0);
   Modelica.Blocks.Sources.Constant zeroBase(k=0);
   Modelica.Blocks.Sources.Constant zeroNorm(k=0);
   Modelica.Blocks.Sources.Constant zeroMachine(k=0);
   Modelica.Blocks.Sources.Constant zeroLight(k=0);
   Modelica.Blocks.Sources.Constant zeroInner(k=0);
-  // 27 Nov. 15
   Modelica.Blocks.Sources.Constant zeroSolRad[fourElements.nOrientations](each k=0);
 
-/*
-  HydronicSystem.SystemWithZoneAndHydronics hydSys
-    annotation (Placement(transformation(extent={{-10,-10},{10,10}},
-        rotation=270,
-        origin={-102,-30})));
-  */
-  /* // 14 Dec 16.00
-equation 
 
-
-  // --- added: measure heat flow through external heatPort into zone convective internal gains port
-  connect(heatPort, HVAC.port_a);
-  connect(HVAC.port_b, fourElements.intGainsConv);
-
-  Pel = 0 "no electrical model yet";
-  QelHeat = 0;
-  Qel = 0;
-  */
 protected
-  // 03 Dec 17.00 replaced
   Real TZoneAct(
     quantity="Thermics.Temp",
     displayUnit="°C",
@@ -713,91 +611,13 @@ protected
   Real deltaTBound[Bound](quantity="Thermics.TempDiff", displayUnit="K")
     "Temperature difference across each boundary"
     annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-  /* // 09 Dec 16.00 comment
-  // 07 Dec 20.00
-  parameter Real TBoundIn(quantity="Thermics.Temp", displayUnit="°C") = 0
-    "Average inner boundary temperature (only used as init/placeholder)";
-  parameter Real TBoundOut(quantity="Thermics.Temp", displayUnit="°C") = 0
-    "Average outer boundary temperature (only used as init/placeholder)";
-  */
-  /* 10 Dec 16.00
-  // 08 Dec 19.00 removed "parameter" and included "[Bound]" and removed "0"
-  parameter Real TGround[Bound](
-    quantity="Thermics.Temp",
-    displayUnit="°C")
-  "Ground temperature, if boundary is ground connected (placeholder)";
-  */
-  /* // 09 Dec 16.00
-  parameter Real TGround(
-    quantity="Thermics.Temp",
-    displayUnit="°C",   quantity="Thermics.Temp", displayUnit="°C") = 0
-    "Ground temperature, if boundary is ground connected (placeholder)";
-  */
-  /* // 15 Dec 22.00 commented
-  // 14 Dec 21.00 - UNCOMMENTED - these arrays are needed
-  Real TBoundIn[Bound](start=fill(293.15, Bound), each fixed=false,
-                       quantity="Thermics.Temp", displayUnit="°C")
-    "Inner temperature of boundary"
-    annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-  Real TBoundOut[Bound](start=fill(283.15, Bound), each fixed=false,
-                        quantity="Thermics.Temp", displayUnit="°C")
-    "Outer temperature of boundary"
-    annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-  */
-  /* 16 Dec 14.00 - 16 Dec 15.00 moved to top after Boundary
-  // 16 Dec 11.00 added each start=293.15
-  // 16 Dec 10.00
-  // 15 Dec 23.00 added
- // 07 Dec 20.00
-  Real TBoundIn[Bound](each start=293.15, quantity="Thermics.Temp", displayUnit="°C")
-    "Inner temperature of boundary"
-    annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-  Real TBoundOut[Bound](each start=293.15, quantity="Thermics.Temp", displayUnit="°C")
-    "Outer temperature of boundary"
-    annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-*/
-/* // 07 Dec 20.00
-  Real TBoundIn[Bound](start=zeros(Bound), each fixed=true,
-                       quantity="Thermics.Temp", displayUnit="°C")
-    "Inner temperature of boundary"
-    annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-  Real TBoundOut[Bound](start=zeros(Bound), each fixed=true,
-                        quantity="Thermics.Temp", displayUnit="°C")
-    "Outer temperature of boundary"
-  annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-  */
-public
-  /* // 20 Dec 11.00 nmoving to the front
-  output Modelica.Blocks.Interfaces.RealOutput HeatCoolLoad(
-      quantity = "Basics.Power",
-      displayUnit = "kW")
-    "Control output for resulting heating and cooling load when Heating-Cooling-Load-Calculation is used"
-    annotation (
-      Placement(
-        transformation(
-          origin={72,-103},
-          extent = {{-10, -10}, {10, 10}},
-          rotation = -90)),
-      iconTransformation(
-        transformation(
-          origin = {0, -200},
-          extent = {{-10, -10}, {10, 10}},
-          rotation = -90)),
-      Dialog(
-        group = "Heating and Cooling Power",
-        tab = "Results 1",
-  __esi_showAs = ShowAs.Result));
-  */
+
 protected
   Real QHeatCoolLoad(quantity="Basics.Power", displayUnit="kW")
     "Heating/cooling load of building"
     annotation(Dialog(group="Heating and Cooling Power", tab="Results 1", __esi_showAs=ShowAs.Result));
-public
-/* // 16 Dec 14.00  
-  Real QHeat(quantity="Basics.Power", displayUnit="kW")
-    "Heat power"
-  annotation(Dialog(group="Heating and Cooling Power", tab="Results 1", __esi_showAs=ShowAs.Result));
-  */
+
+
 protected
   Real QTotal(quantity="Basics.Power", displayUnit="kW")
     "Total heating/cooling load"
@@ -819,11 +639,7 @@ protected
     "Electrical reactive power"
     annotation(Dialog(group="Electrical Power", tab="Results 1", __esi_showAs=ShowAs.Result));
 public
-/* // 16 Dec 14.00  
-  Real EHeat(quantity="Basics.Energy", displayUnit="kWh")
-    "Energy used for heating"
-    annotation(Dialog(group="Energy", tab="Results 1", __esi_showAs=ShowAs.Result));
-*/
+
   Real Eel(quantity="Basics.Energy", displayUnit="kWh")
     "Electrical energy demand"
     annotation(Dialog(group="Energy", tab="Results 1", __esi_showAs=ShowAs.Result));
@@ -872,26 +688,12 @@ protected
     "Heat power of Boundary"
     annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  /* 16 Dec 14.00 - 16 Dec 15.00  mobved to top after Boundary
-  Real QBoundIn[Bound](quantity="Basics.Power", displayUnit="kW")
-    "Inner heat losses/gains due to Boundary"
-    annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
-                      tab="Results 2", __esi_showAs=ShowAs.Result));
-  Real QBoundOut[Bound](quantity="Basics.Power", displayUnit="kW")
-    "Outer heat losses/gains due to Boundary"
-    annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
-                      tab="Results 2", __esi_showAs=ShowAs.Result));
-*/
+
   Real QBoundAbsorp[Bound](quantity="Basics.Power", displayUnit="kW")
     "Transmission losses correction vector for Boundaries due to radiation absorption"
     annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  /* 16 Dec 14.00 - 16 Dec 15.00  mobved to top after Boundary
-  Real QBoundChange[Bound](quantity="Basics.Power", displayUnit="kW")
-    "Interchanged heat between outer and inner parts of Boundaries"
-    annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
-                      tab="Results 2", __esi_showAs=ShowAs.Result));
-*/
+
   Real QLAirLeak(quantity="Basics.Power", displayUnit="kW")
     "Ventilation losses by air leak"
     annotation(Dialog(group="Ventilation - Heating and Cooling",
@@ -1053,13 +855,13 @@ public
     "Density of inner mass 1"
     annotation(Dialog(group="Inner Mass 1", tab="Inner Masses"));
   parameter Real infiltrationRate(unit="1/h") = 0.5
-    "Air change rate for infiltration";             // 21 Dec FIX v11: Added default value
+    "Air change rate for infiltration";
   parameter Modelica.Units.SI.HeatFlowRate occupancyLoad = 0
-    "Heat gains from occupants";                             // 21 Dec FIX v11: Added default
+    "Heat gains from occupants";
   parameter Modelica.Units.SI.HeatFlowRate applianceLoad = 0
-    "Heat gains from appliances";                            // 21 Dec FIX v11: Added default
+    "Heat gains from appliances";
 
-  // part 5
+
 protected
 function ground
   input Real depthGround;
@@ -1181,8 +983,8 @@ algorithm
   angle := acos(minMax);
   annotation(Impure=false);
 end diffAngle;
-public // 16 Dec 21.00
-// c25 Nov 7. changed Real to parameter Real...
+public
+
 model Boundary "Properties of a boundary V1.0"
   parameter Real ABound(quantity="Geometry.Area", displayUnit="m²")
     "Surface area";
@@ -1337,170 +1139,16 @@ model Boundary "Properties of a boundary V1.0"
   annotation(Icon(coordinateSystem(extent={{-100,50},{100,-50}})));
 end Boundary;
 
-/* // 17 Dec 10.00 old shit
-public 
-model Boundary "Properties of a boundary V1.0"
 
-  parameter 
-    Real ABound(quantity="Geometry.Area", displayUnit="m²")
-      "Surface area";
-
-    Real AWindow(quantity="Geometry.Area", displayUnit="m²")
-      "Window surface area";
-
-    Real AOthers(quantity="Geometry.Area", displayUnit="m²")
-      "Other surfaces (e.g. doors)";
-
-    Real rhoBound(quantity="Thermodynamics.Density", displayUnit="kg/m³")
-      "Density of boundary";
-
-    Real cpBound(quantity="Thermodynamics.SpecHeatCapacity", displayUnit="kJ/(kg·K)")
-      "Specific heat capacity of boundary";
-
-    Real dBound(quantity="Geometry.Length", displayUnit="m")
-      "Thickness of boundary";
-
-    Real gWindow
-      "Total energy translucency of window";
-
-    Real uBound(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)")
-      "Heat transmission value of boundary";
-
-    Real uWindow(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)")
-      "Heat transmission value of window";
-
-    Real uOthers(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)")
-      "Heat transmission value of other surfaces";
-
-    Real epsDirt
-      "Dirt correction value for window";
-
-    Real epsShading
-      "Shading correction value for window";
-
-    Real epsFrame
-      "Frame correction value for window";
-
-    Real NormalVector[3]
-      "Normal vector of boundary";
-
-    Real alphaInc
-      "Inclination angle of boundary";
-
-    Real alphaOr
-      "Orientation angle of boundary";
-
-    Real alphaBound
-      "Absorption coefficient of boundary";
-
-    Real alphaBoundOut(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)")
-      "Outer heat transmission coefficient of boundary";
-
-    Real alphaBoundIn(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)")
-      "Inner heat transmission coefficient of boundary";
-
-    Real depthBound(quantity="Geometry.Length", displayUnit="m")
-      "Depth of boundary, if it is ground connected";
-
-    Integer contactBound
-      "Boundary is connected to: '0' - ambience, 1,2,3 ... - Zone 1,2,3";
-
-    // 17 Dec 10.00 added 5 statements ------------------------------------------------------------------
-    // Exposed boundary results (filled by parent model HeatedZone_1)
-    // These are NOT parameters and NOT outputs: parent assigns them by equations.
-    // ------------------------------------------------------------------
-    Real TBoundIn(
-      quantity="Thermics.Temp",
-      displayUnit="°C",
-      start=293.15)
-      "Inner surface temperature of boundary"
-      annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-
-    Real TBoundOut(
-      quantity="Thermics.Temp",
-      displayUnit="°C",
-      start=283.15)
-      "Outer surface temperature of boundary"
-      annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-
-    Real QBoundIn(
-      quantity="Basics.Power",
-      displayUnit="kW")
-      "Inner heat losses/gains due to boundary (W internally)"
-      annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
-      tab="Results 2", __esi_showAs=ShowAs.Result));
-  
-    Real QBoundOut(
-      quantity="Basics.Power",
-      displayUnit="kW")
-      "Outer heat losses/gains due to boundary (W internally)"
-      annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
-      tab="Results 2", __esi_showAs=ShowAs.Result));
-
-    Real QBoundChange(
-      quantity="Basics.Power",
-      displayUnit="kW")
-      "Heat exchanged through boundary (W internally)"
-        annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
-      tab="Results 2", __esi_showAs=ShowAs.Result));
-    parameter Real TGround(
-      quantity="Thermics.Temp",
-      displayUnit="°C") = 283.15
-      "Ground temperature if ground connected";
-
-    Real TGround(quantity="Thermics.Temp", displayUnit="°C")
-      "Ground temperature, if boundary is ground connected (placeholder)";
-
-    Real lambdaBound(quantity="Thermics.SpecHeatCond", displayUnit="W/(m·K)")
-      "Heat conductance of boundary";
-
-    Boolean groundContact
-      "Boundary ground contact enabled/disabled";
-
-  
-
-  
-   // 17 Dec 09.00 commented
-    // 17 Dec 08.00
-  Real TBoundIn(quantity="Thermics.Temp", displayUnit="°C", start=293.15)
-    "Inner surface temperature (provided by parent)";
-  Real TBoundOut(quantity="Thermics.Temp", displayUnit="°C", start=283.15)
-    "Outer surface temperature (provided by parent)";
-  Real QBoundIn(quantity="Basics.Power", displayUnit="kW")
-    "Inner surface heat flow (provided by parent)";
-  Real QBoundOut(quantity="Basics.Power", displayUnit="kW")
-    "Outer surface heat flow (provided by parent)";
-  Real QBoundChange(quantity="Basics.Power", displayUnit="kW")
-    "Heat transferred through boundary (provided by parent)";
-
-  annotation(
-    Icon(
-      coordinateSystem(extent={{-100,50},{100,-50}})));
-
-end Boundary;
-*/
 
   // part 6
 public
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow internalGains
     annotation (Placement(transformation(extent={{-84,-6},{-64,16}})));
-  /* // 16 Dec 17.00
-  Modelica.Blocks.Sources.RealExpression hvac(y=HeatCoolLoad*1000)
-  annotation (Placement(transformation(extent={{-120,10},{-100,30}})));
-  */
-  // 15 Dec 14.00
+
   Modelica.Blocks.Sources.RealExpression TInSig[Bound](each y=TZoneAct)
     annotation (Placement(transformation(extent={{-42,70},{-22,90}})));
-  /* // 15 Dec 18.00 commented
-  Modelica.Blocks.Sources.RealExpression TOutSig[Bound]
-  annotation (Placement(transformation(extent={{-102,-32},{-82,-12}})));
-  /*
-Modelica.Thermal.HeatTransfer.Sources.PrescribedTemperature TOutSrc[Bound]
-    "Outdoor temperature for infiltration"
-  annotation (Placement(transformation(extent={{-54,-48},{-34,-28}})));
-*/
 
-  // 15 Dec 18.00 edited
   Modelica.Blocks.Sources.RealExpression ToutSig(y = 273.15 + T_outside.y)
     annotation (Placement(transformation(extent={{-98,-52},{-78,-32}})));
 
@@ -1508,32 +1156,21 @@ Modelica.Thermal.HeatTransfer.Sources.PrescribedTemperature TOutSrc[Bound]
     "Outdoor temperature for infiltration"
     annotation (Placement(transformation(extent={{-54,-48},{-34,-28}})));
 
-  /* 16 Dec 17.00
-  Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_b portExt
-    "Outer surface thermal port"
-  annotation (Placement(transformation(extent={{-130,-62},{-110,-42}})));
-  */
+
 
   // ******************heatPort exists, but is NOT connected internally***********************
   Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a heatPort
     "Thermal port to connect hydronic system to the zone"
     annotation (Placement(transformation(extent={{-116,32},{-96,52}})));
 
-  /* // 20 Dec 12.00// 20 Dec 11.00
-  Modelica.Blocks.Sources.RealExpression qInt(y=HeatCoolLoad)
-    annotation (Placement(transformation(extent={{-50,36},{-30,56}})));
-*/
+
   Modelica.Thermal.HeatTransfer.Sensors.TemperatureSensor senTZone
     annotation (Placement(transformation(extent={{-140,-32},{-120,-12}})));
-  /* // 20 Dec 12.00
-  Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow QIntConv
-  annotation (Placement(transformation(extent={{2,34},{22,54}})));
-  */
+
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow QIntRad
     annotation (Placement(transformation(extent={{-50,14},{-30,34}})));
   Modelica.Thermal.HeatTransfer.Sensors.HeatFlowSensor HVAC
     annotation (Placement(transformation(extent={{152,14},{172,34}})));
-  // 28 Dec 10.00
   // ============================================================================
   // VARIABLE INTERNAL GAINS INPUTS (28 Dec - CORRECTED)
   // ============================================================================
@@ -1546,11 +1183,13 @@ Modelica.Thermal.HeatTransfer.Sources.PrescribedTemperature TOutSrc[Bound]
 
   Modelica.Blocks.Interfaces.RealInput P_appliances_W(start=50)
     "Appliance power [W]"
-    annotation (Placement(transformation(extent={{-240,50},{-200,90}})));
+    annotation (Placement(transformation(extent={{-168,42},{-140,70}}),
+        iconTransformation(extent={{-168,42},{-140,70}})));
 
   Modelica.Blocks.Interfaces.RealInput Q_radiation_W(start=0)
     "Internal radiative heat gain [W]"
-    annotation (Placement(transformation(extent={{-240,10},{-200,50}})));
+    annotation (Placement(transformation(extent={{-170,-70},{-142,-42}}),
+        iconTransformation(extent={{-170,-70},{-142,-42}})));
 
   Modelica.Blocks.Math.Gain occGain_conv(k=80)
     "Convert number of persons to heat [W] (80W per person)"
@@ -1560,10 +1199,7 @@ Modelica.Thermal.HeatTransfer.Sources.PrescribedTemperature TOutSrc[Bound]
         origin={129,59})));
 
 initial equation
-  /* // 16 Dec 14.00
-  EHeat = 0; // 15 Dec 00.00
-  */
-  // 03 Dec 18.00 added
+
   // Boundary 1 checks
   assert(uBound1 > 1e-10, "Boundary 1 - uBound = 0");
   assert(alphaBoundIn1 > 1e-10, "Boundary 1 - alphaBoundIn = 0");
@@ -1594,121 +1230,27 @@ initial equation
   assert(alphaOrientation3 >= 0 and alphaOrientation3 <= 2*pi,
          "Boundary 3 - alphaOrientation out of range");
 
-//initial equation
   assert(Bound >= BoundMin, "Number of Boundaries is too low");
   assert(Bound <= BoundMax, "Number of Boundaries is too high");
   assert(Mass  >= MassMin,  "Number of inner Masses is too low");
   assert(Mass  <= MassMax,  "Number of inner Masses is too high");
   assert(NumberZones >= 1 and NumberZones <= MaxNumberZones, "Number of Zones out of limits");
   assert(ZoneIndex   >= 1 and ZoneIndex   <= MaxNumberZones, "Zone index out of limits");
-  // 16 Dec 14.00
 
-  // (removed old ZoneTemperatures fallback block; defined later in one place)
 
-  /* 16 Dec 14.00
-  if (contactBound1 > 0) or 
-     (contactBound2 > 0 and Bound > 1) or 
-     (contactBound3 > 0 and Bound > 2) then
-    for i in 1:size(ZoneTemperatures,1) loop
-      ZoneTemperatures[i] = TZoneAct;
-     // ZoneTemperatures[i] = TBoundIn[i]; // 24 NOV 2. T to TBoundIn // 15 Dec 12.00 commented
-    end for;
-  else
-    for i in 1:size(ZoneTemperatures,1) loop
-      ZoneTemperatures[i] = 0;
-    end for;
-  end if;
-  */
-/* 10 Dec 16.00 
-  if (not LoadCalculation) and Heat then
-    TReturnHeat = TReturnHeatInit;
-  else
-    TReturnHeat = 0;
-end if;
-*/
-/* // 16 Dec 14.00
-EHeat = 0;
-*/
-  // 21 Dec FIX v11: Removed duplicate Eel = 0 (already in main equation section at line ~1722)
-  // Eel = 0;
-/* // 10 Dec 16.00 comented
-  // 10 Dec 16.00 dummy definitions so variables are not free unknowns
-  TFlowHeat = 0;
-  qvHeat    = 0;
-*/
-  /* // 09 Dec 16.00 no alternate codes
-  // 04 Dec 11.00 added instead of equation
-for i in 1:Bound loop
-  // Boundary connected to other zone or ground
-  if (Boundaries[i].contactBound > 0 or Boundaries[i].groundContact) then
-    if Boundaries[i].groundContact then
-      TBoundOut[i] = TAmbientBound[i];
-    else
-      TBoundOut[i] =
-        TAmbientBound[i] + (TZoneAct - TAmbientBound[i] - deltaTBound[i]) / 2;
-    end if;
-
-    TBoundIn[i] =
-      TZoneAct - (TZoneAct - TAmbientBound[i] - deltaTBound[i]) / 2;
-
-  // Boundary faces ambient (no ground contact, no zone contact)
-  else
-    TBoundIn[i] =
-      TZoneAct - (TZoneAct - EnvironmentConditions.TAmbientAverageAct
-      - deltaTBound[i]) / 2;
-
-    TBoundOut[i] =
-      EnvironmentConditions.TAmbientAverageAct
-      + (TZoneAct - EnvironmentConditions.TAmbientAverageAct
-      - deltaTBound[i]) / 2;
-  end if;
-end for;
-*/
 
 //algorithm
 equation
-  // 21 Dec FIX v10: Add critical heatPort connection that was missing
-  // Connect external heatPort to HVAC sensor input
-  connect(heatPort, HVAC.port_a);
-  // NOTE: connect(HVAC.port_b, fourElements.intGainsConv) already exists at line ~2539
-  // END 21 Dec FIX v10
-
-  /* // 20 Dec FIX: Commented out - QBoundIn, QBoundOut, QBoundChange are NOT members of Boundary model
-     // They are separate arrays declared at lines 93-100
-  // 20 Dec 12.00 c(1) --- Map Boundary results into HeatedZone arrays (needed for post-processing / load calc)
-  for i in 1:Bound loop
-    QBoundIn[i]     = Boundaries[i].QBoundIn;
-    QBoundOut[i]    = Boundaries[i].QBoundOut;
-    QBoundChange[i] = Boundaries[i].QBoundChange;
-  end for;
-  */
-     // END 20 Dec FIX
-
-  // --- Output per-zone temperature vector (if you use multiple zones outside)
-  /* // 20 Dec FIX: Commented out - T_outside is a Constant block (line 377), not a Real variable
-     // Cannot assign to a component
-  // --- Outside temperature output (if you want it as a result signal)
-  T_outside = ToutSig.y;
-  */
-     // END 20 Dec FIX
-  // 20 Dec 12.00
   HeatCoolLoad = -HVAC.Q_flow;
-// 20 Dec FIX: Provide equation for internalGains.Q_flow since qInt is commented out
   // Set to 0 because HVAC already provides heating/cooling through its separate connection
   internalGains.Q_flow = 0;
 
-  /* 16 Dec 10.00
-  // 16 Dec 09.00 Bind result temperatures to the actual boundary heat ports
-  TBoundIn  = portInt.T;
-  TBoundOut = portExt.T;
-*/
-  // 14 Dec 16.00 added instead of L627
   // Basic electrical outputs (no electrical model)
   Pel = 0;
   QelHeat = 0;
   Qel = 0;
 
-  // 20 Dec FIX v3: Add equations for ALL missing result variables
+  // Add equations for ALL missing result variables
   Eel = 0;
   PVent = 0;
   QAirComfort = 0;
@@ -1725,60 +1267,16 @@ QInner = 0;
   qvHeat = 0;
   TFlowHeat = 0;
   TReturnHeat = 0;
-
-  // 20 Dec FIX v5: TOutSrc.port is NOT connected (connect statement commented out at line 2530)
-  // Modelica auto-generates Q_flow = 0 for unconnected ports, so DON'T set it explicitly!
-  // TOutSrc.port.Q_flow = 0;  // REMOVED - causes duplicate equation
   TOutSrc.T = ToutSig.y;  // Still needed since connect(ToutSig.y, TOutSrc.T) is commented out
 
-  /* // 20 Dec FIX v4: REMOVED - heatPort is an EXTERNAL connector
-     // Setting equations for it creates extra equations since it gets connected from outside
-  heatPort.Q_flow = 0;
-  heatPort.T = TZone;
-  */
-     // END 20 Dec FIX v4
 
-  // 20 Dec FIX v4: Add equation for TZoneAct - it was never assigned!
+  // Add equation for TZoneAct - it was never assigned!
   TZoneAct = TZone;
 
-  // 20 Dec 12.00 added // 18 Dec 14.00 // 18 Dec 13.00 Map fourElements air temperature to external output
+  // Map fourElements air temperature to external output
   TZone = fourElements.TAir;
   ZoneTemperatures = fill(TZone, NumberZones);
-// Assign neighbour zone temperatures output (avoid structural singularity)
-  /* // 15 Dec 23.00 commented - as already loop there in L1433
-  // 15 Dec 11.00
-   // 13 Dec 21.00 commented - as already loop is there below (L1426)
-  // 13 Dec 17.00 added---------------------------------------------------------
-  // BINDING EQUATIONS for Boundary input variables
-  // ---------------------------------------------------------
-  for i in 1:Bound loop
-    Boundaries[i].TBoundIn = TZoneAct;
-    Boundaries[i].TBoundOut = TAmbientBound[i];
-  end for;
-*/
 
-//equation
-  /* // 13 Dec 12.00 commented as below one is identical
-  for i in 1:Bound loop
-    if (Boundaries[i].contactBound > 0 or Boundaries[i].groundContact) then
-      if (Boundaries[i].lambdaBound > 1e-10) then
-        deltaTBound[i] = (TZoneAct - TAmbientBound[i])
-                         * Boundaries[i].uBound / (Boundaries[i].lambdaBound / Boundaries[i].dBound);
-      else
-        deltaTBound[i] = TZoneAct - TAmbientBound[i];
-      end if;
-    else
-      if (Boundaries[i].lambdaBound > 1e-10) then
-        deltaTBound[i] = (TZoneAct - EnvironmentConditions.TAmbientAverageAct)
-                         * Boundaries[i].uBound / (Boundaries[i].lambdaBound / Boundaries[i].dBound);
-      else
-        deltaTBound[i] = TZoneAct - EnvironmentConditions.TAmbientAverageAct;
-      end if;
-    end if;
-  end for;
-*/
-
-  // 11 Dec 20.00 added
   // ---------------------------------------------------------
   // 1. Compute deltaTBound[i]
   // ---------------------------------------------------------
@@ -1799,127 +1297,7 @@ QInner = 0;
       end if;
     end if;
   end for;
-  /* // 19 Dec 09.00 uing below loop
-  // 15 Dec 23.00 --- Boundary temperatures (zone arrays + Boundary model fields) ---
-  for i in 1:Bound loop
-    TBoundIn[i]  = TZoneAct;
-    TBoundOut[i] = TAmbientBound[i];
-    // 16 Dec 10.00
-    // keep Boundary model variables defined (prevents free unknowns)
-    Boundaries[i].TBoundIn  = TBoundIn[i];
-    Boundaries[i].TBoundOut = TBoundOut[i];
-   
-  end for;
-*/
-  /* 18 Dec 12.00 // 17 Dec 14.00 uncommented // 15 Dec 23.00
-  // 14 Dec 20.00 Equations for boundary surface temperatures
-  for i in 1:Bound loop
-    TBoundIn[i] = TZoneAct;
-    TBoundOut[i] = TAmbientBound[i];
-  end for;
-*/
-  /* // 14 Dec 20.00 commented
-  // 13 Dec 18.00 commented
-  // 13 Dec 12.00 --- Simple algebraic boundary temperatures (no dynamics) ---
-for i in 1:Bound loop
-  // Inner surface follows zone air temperature
-  Boundaries[i].TBoundIn  = TZoneAct;
 
-  // Outer surface follows ambient temperature seen by that boundary
-  Boundaries[i].TBoundOut = TAmbientBound[i];
-end for;
-  */
-  /* // 16 Dec 12.00
-// 14 Dec 19.00 added
-  portInt.T = TZoneAct;
-*/
-  /* // 11 Dec 22.00 commented
-  // 11 Dec 20.00 added
-  // ---------------------------------------------------------
-  // 2. NEW ALGEBRAIC DEFINITIONS for TBoundIn / TBoundOut
-  // ---------------------------------------------------------
-  for i in 1:Bound loop
-    if (Boundaries[i].contactBound > 0 or Boundaries[i].groundContact) then
-      if Boundaries[i].groundContact then
-        // Ground-contact: outer surface follows ground/ambient temp
-        Boundaries[i].TBoundOut = TAmbientBound[i];
-      else
-        // Split temperature drop across the wall
-        Boundaries[i].TBoundOut =
-          TAmbientBound[i]
-          + (TZoneAct - TAmbientBound[i] - deltaTBound[i]) / 2;
-      end if;
-
-      Boundaries[i].TBoundIn =
-        TZoneAct - (TZoneAct - TAmbientBound[i] - deltaTBound[i]) / 2;
-
-    else
-      // Exterior boundary (no ground, no zone contact)
-      Boundaries[i].TBoundIn =
-        TZoneAct
-        - (TZoneAct - EnvironmentConditions.TAmbientAverageAct - deltaTBound[i]) / 2;
-
-      Boundaries[i].TBoundOut =
-        EnvironmentConditions.TAmbientAverageAct
-        + (TZoneAct - EnvironmentConditions.TAmbientAverageAct - deltaTBound[i]) / 2;
-    end if;
-  end for;
-*/
-  /* // 19 Dec 09.00  // 18 Dec 12.00
-  // Ground temperature per boundary (must be defined once)
-for i in 1:Bound loop
-  if Boundaries[i].groundContact then
-    TGround[i] = EnvironmentConditions.TAverageAmbientAnnual;
-  else
-    TGround[i] = EnvironmentConditions.TAmbient;
-  end if;
-  end for;
-  */
-/* // 18 Dec 12.00 commented
-for i in 1:Bound loop
-  if Boundaries[i].groundContact then
-    // choose ONE rule; this matches your “17 Dec 18:00” intent
-    TGround[i]       = EnvironmentConditions.TAverageAmbientAnnual;
-    TAmbientBound[i] = TGround[i];
-  else
-    TGround[i]       = EnvironmentConditions.TAmbient;  // (optional but keeps it defined)
-    TAmbientBound[i] = EnvironmentConditions.TAmbient;
-  end if;
-end for;
-*/
-/* // 18 Dec 12.00 commented both the loops // 10 Dec 16.00 commented
-  // 09 Dec 19.00 added "Amb"
-  // part 7
-  // 05 Dec 22.00 added
-for i in 1:Bound loop
-  if Boundaries[i].groundContact then
-    TGround[i] = EnvironmentConditions.TAverageAmbientAnnual;
-  else
-    TGround[i] = EnvironmentConditions.TAmbient;
-  end if;
-end for;
-  
-  // 17 Dec 18.00
-for i in 1:Bound loop
-  if Boundaries[i].groundContact then
-    TAmbientBound[i] = EnvironmentConditions.TAverageAmbientAnnual;
-    TGround[i]       = EnvironmentConditions.TAverageAmbientAnnual;
-  else
-    TAmbientBound[i] = EnvironmentConditions.TAmbient;
-    TGround[i]       = EnvironmentConditions.TAmbient;
-  end if;
-end for;
-*/
-/* // 17 Dec 18.00 commented  // 17 Dec 17.00 - Ground temperature per boundary (RESULT array, not inside record)
-for i in 1:Bound loop
-  if Boundaries[i].groundContact then
-    TGround[i] = EnvironmentConditions.TAverageAmbientAnnual;
-  else
-    TGround[i] = EnvironmentConditions.TAmbient; // or keep unused for non-ground
-  end if;
-end for;
-*/
-// 19 Dec 09.00
 for i in 1:Bound loop
   if Boundaries[i].groundContact then
     TGround[i] = EnvironmentConditions.TAverageAmbientAnnual;
@@ -1928,139 +1306,7 @@ for i in 1:Bound loop
     TGround[i] = EnvironmentConditions.TAmbient;
     TAmbientBound[i] = EnvironmentConditions.TAmbient;
   end if;
-  /* // 20 Dec FIX: Commented out - these conflict with the dynamic/massless for loop at lines 2327-2357
-     // That loop handles TBoundIn and TBoundOut properly for both dynamic and massless boundaries
-  TBoundIn[i]  = TZoneAct;
-  */
-     // END 20 Dec FIX
-
-  /* // 20 Dec FIX v3: Commented out - deltaTBound[i] is calculated in for loop at lines 1760-1776
-  // 19 Dec 10.00 keep it defined
-  deltaTBound[i]  = 0;
-  */
-     // END 20 Dec FIX v3
-
-  /* // 20 Dec FIX: Commented out - conflicts with for loop at lines 2327-2357
-  TBoundOut[i] = TAmbientBound[i] - deltaTBound[i]; // 19 Dec 10.00  - deltaTBound[i]
-  */
-     // END 20 Dec FIX
-
-  /* // 19 Dec 11.00  // 19 Dec 10.00 IMPORTANT: keep Boundary model variables pinned (prevents free unknowns)
-  Boundaries[i].TBoundIn  = TBoundIn[i];
-  Boundaries[i].TBoundOut = TBoundOut[i];
-  */
 end for;
-/* // 19 Dec 09.00 using above loop
-// Ambient temperature used in boundary heat transfer
-for i in 1:Bound loop
-  if Boundaries[i].groundContact then
-    TAmbientBound[i] = TGround[i];
-  else
-    TAmbientBound[i] = EnvironmentConditions.TAmbient;
-  end if;
-end for;
-*/
-/* // 17 Dec 17.00 commented  // 17 Dec 16.00 uncommented // 17 Deec 14.00 - due to singularity
-for i in 1:Bound loop
-  if Boundaries[i].groundContact then
-    TAmbientBound[i] = EnvironmentConditions.TAverageAmbientAnnual;
-  else
-    TAmbientBound[i] = EnvironmentConditions.TAmbient;
-  end if;
-  end for;
-// 17 Deec 16.00
-for i in 1:Bound loop
-  if Boundaries[i].groundContact then
-    TGround[i] = EnvironmentConditions.TAverageAmbientAnnual;
-  else
-    TGround[i] = EnvironmentConditions.TAmbient;
-  end if;
-end for;
-*/
-  /* // 17 Dec 15.00// 17 Dec 09.00 ------------------------------------------------------------------
-// Provide TGround to Boundary models (prevents structural singularity)
-// ------------------------------------------------------------------
-for i in 1:Bound loop
-  if Boundaries[i].groundContact then
-    Boundaries[i].TGround = EnvironmentConditions.TAverageAmbientAnnual;
-  else
-    Boundaries[i].TGround = EnvironmentConditions.TAmbient;
-  end if;
-end for;
-*/
-/* // 16 Dec 17.00  
-  // 10 Dec 16.00 added
-for i in 1:Bound loop
-  if Boundaries[i].contactBound == 0 then
-    if Boundaries[i].groundContact then
-      // Ground-contact boundary: use annual average ground/ambient temperature
-      TAmbientBound[i] = EnvironmentConditions.TAverageAmbientAnnual;
-    else
-      // Exterior boundary to ambient air
-      TAmbientBound[i] = EnvironmentConditions.TAmbient;
-    end if;
-  else
-    // Boundary connected to another zone
-    if Boundaries[i].contactBound <= NumberZones then
-      TAmbientBound[i] = ZoneTemperatures[Boundaries[i].contactBound];
-    else
-      // Fallback: treat as ambient
-      TAmbientBound[i] = EnvironmentConditions.TAmbient;
-    end if;
-  end if;
-end for;
-*/
-/* // 14 Dec 15.00 commented
-// 13 Dec 17.00 added---------------------------------------------------------
-// FINAL algebraic closure for boundary temperatures
-// ---------------------------------------------------------
-for i in 1:Bound loop
-  Boundaries[i].TBoundIn  = TZoneAct;
-  Boundaries[i].TBoundOut = TAmbientBound[i];
-end for;
-*/
-/* 15 Dec 12.00 commented
- // 14 Dec 23.00 commented // 14 Dec 22.00 added
-// 14 Dec - 15.00 EXPLICIT binding for boundary temperatures (Dymola compatibility)
-// Boundary 1
-Boundaries[1].TBoundIn  = TZoneAct;
-Boundaries[1].TBoundOut = TAmbientBound[1];
-// Boundary 2
-Boundaries[2].TBoundIn  = TZoneAct;
-Boundaries[2].TBoundOut = TAmbientBound[2];
-// Boundary 3
-Boundaries[3].TBoundIn  = TZoneAct;
-Boundaries[3].TBoundOut = TAmbientBound[3];
-*/
-    /* // 10 Dec 16.00 commented
-  // 09 Dec 19.00 added "Amb"
-// 02 Dec 24. replaced below code for 2.2 TGround
-for i in 1:Bound loop
-  if Boundaries[i].contactBound == 0 then
-    if Boundaries[i].groundContact then
-      TAmbientBound[i] = TGround[i];
-    else
-      TAmbientBound[i] = EnvironmentConditions.TAmbient;
-    end if;
-  else
-    if Boundaries[i].contactBound <= NumberZones then
-      TAmbientBound[i] = ZoneTemperatures[Boundaries[i].contactBound];
-    else
-      TAmbientBound[i] = EnvironmentConditions.TAmbient;
-    end if;
-  end if;
-end for;
-*/
-
-/* 16 Dec 14.00
-// 03 Dec 20.00 added for ZoneTemperatures [2] and [3]
-// Provide values for unused neighbour zone outputs
-if size(ZoneTemperatures, 1) > 1 then
-  for i in 2:size(ZoneTemperatures,1) loop
-    ZoneTemperatures[i] = TZoneAct;
-  end for;
-end if;
-*/
 
   CZoneAir  =  EnvironmentConditions.cpAir * EnvironmentConditions.rhoAir * AZone * hZone;
   if Mass > 0 then
@@ -2069,31 +1315,6 @@ end if;
     CZoneMass =  0;
   end if;
 
-/* // 06 Dec 16.00
-// 05 Dec 13.00 added
-FromFlow.p = Medium.p_default;
-
- // commented 21 NOv
-if not LoadCalculation and Heat then
-  TFlowHeat =
-    Medium.temperature_ph(
-      FromFlow.p,
-      inStream(FromFlow.h_outflow));
-  TReturnHeat =
-    Medium.temperature_ph(
-      ToReturn.p,
-      inStream(ToReturn.h_outflow));
-  qvHeat =
-    FromFlow.m_flow
-      / Medium.density_ph(
-          FromFlow.p,
-          inStream(FromFlow.h_outflow));
-else
-  TFlowHeat   = 0;
-  TReturnHeat = 0;
-  qvHeat      = 0;
-end if;
-*/
 
 /* --------------------------------------------------------------
    OLD SIMX HEAT-TRANSFER LOOP — DISABLED FOR PHIL VERSION
@@ -2143,13 +1364,13 @@ for i in (1:Bound) loop
         + 0.75*EnvironmentConditions.RadiationDiffuse * 0.5*(cos(Boundaries[i].alphaInc)+1));
   end if;
 
-  // 17 DEC 18.00  --- Inner boundary heat flow
+  //--- Inner boundary heat flow ---
   QBoundIn[i] =
     -Boundaries[i].alphaBoundIn *
     (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers) *
     (TZoneAct - TAmbientBound[i]);
 
-  // --- Heat transfer through boundary (ALWAYS defined)
+  // --- Heat transfer through boundary (ALWAYS defined) ---
   if Boundaries[i].dBound > 0.001 then
     QBoundChange[i] =
       -Boundaries[i].lambdaBound / Boundaries[i].dBound *
@@ -2169,42 +1390,7 @@ for i in (1:Bound) loop
       (TAmbientBound[i] - TZoneAct)
       + QBoundAbsorp[i];
   end if;
-  /* // 17 Dec 18.00 comment
-  QBoundIn[i] =
-    -Boundaries[i].alphaBoundIn *
-    (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers) *
-    (TZoneAct - TAmbientBound[i]); // 16 Dec 10.00 (Boundaries[i].TBoundIn - TZoneAct);
 
-  // 16 Dec 13.00 --- FIX: Always define QBoundChange so it never becomes an unassigned unknown
-  if Boundaries[i].dBound > 0.001 then
-    QBoundChange[i] =
-      -Boundaries[i].lambdaBound / Boundaries[i].dBound *
-      (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers) *
-    QBoundChange[i] = 0;
-  end if;
-
-   // 16 Dec 10.00
-  if Boundaries[i].dBound > 0.001 then
-    QBoundChange[i] =
-      -Boundaries[i].lambdaBound / Boundaries[i].dBound *
-      (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers) *
-      (TBoundOut[i] - Boundaries[i].TBoundIn);
-  else
-    QBoundChange[i] =  0;
-  end if;
-  // end comment
-  
-  if Boundaries[i].groundContact then
-    QBoundOut[i] = QBoundChange[i];
-  else
-    QBoundOut[i] =
-      Boundaries[i].alphaBoundOut *
-      (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers) *
-      (TAmbientBound[i] - TZoneAct)
-      + QBoundAbsorp[i];            // 16 Dec 11.00 (TBoundOut[i] - TAmbientBound[i])
-  end if;      // donno how it end up here -- (TAmbientBound[i] - TZoneAct);
-  // donno else
-*/
 
   QBound[i] =
     Boundaries[i].uBound *
@@ -2217,150 +1403,10 @@ for i in (1:Bound) loop
     uHeatBridge *
     (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers) *
     (TZoneAct - TAmbientBound[i]);
-  /* // 17 Dec 18.00 commented  // 16 Dec 23.00  - outer side heat flow
-  QBoundOut[i] = QBoundChange[i];
-  */
+
 end for;
 
-//--------------------------------------------------------------*/
-
-/* 11 Dec 23.00 commented, above is the alternative
-// 02 Dec 27. replaced for TZoneAct error
-for i in 1:Bound loop
-  AngleBound[i] = angleMinMax(diffAngle(
-        EnvironmentConditions.RadiationVector,
-        Boundaries[i].NormalVector),
-      1.5707963267948966,
-      0);
-
-  if useWindowShading then
-    QTransWindowAbsorp[i] =
-      -Boundaries[i].gWindow * (1 - WindowShading[i])
-      * Boundaries[i].AWindow
-      * (1 - Boundaries[i].epsDirt)
-      * (1 - Boundaries[i].epsShading)
-      * (1 - Boundaries[i].epsFrame)
-      * ((EnvironmentConditions.RadiationDirect
-          + 0.25*EnvironmentConditions.RadiationDiffuse) * cos(AngleBound[i])
-         + 0.75*EnvironmentConditions.RadiationDiffuse * 0.5
-           * (cos(Boundaries[i].alphaInc) + 1));
-  else
-    QTransWindowAbsorp[i] =
-      -Boundaries[i].gWindow * Boundaries[i].AWindow
-      * (1 - Boundaries[i].epsDirt)
-      * (1 - Boundaries[i].epsShading)
-      * (1 - Boundaries[i].epsFrame)
-      * ((EnvironmentConditions.RadiationDirect
-          + 0.25*EnvironmentConditions.RadiationDiffuse) * cos(AngleBound[i])
-         + 0.75*EnvironmentConditions.RadiationDiffuse * 0.5
-           * (cos(Boundaries[i].alphaInc) + 1));
-  end if;
-
-  QTransWindow[i] =
-    (Boundaries[i].uWindow + uHeatBridge)
-    * Boundaries[i].AWindow
-    * (TZoneAct - TAmbientBound[i]);
-
-  QTransOthers[i] =
-    (Boundaries[i].uOthers + uHeatBridge)
-    * Boundaries[i].AOthers
-    * (TZoneAct - TAmbientBound[i]);
-
-  if Boundaries[i].groundContact then
-    QHeatBridgeAbsorp[i] = 0;
-    QBoundAbsorp[i]      = 0;
-  else
-    QHeatBridgeAbsorp[i] =
-      -uHeatBridge * (1 - Boundaries[i].epsShading)
-      * (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers)
-      * (Boundaries[i].alphaBound / Boundaries[i].alphaBoundOut)
-      * ((EnvironmentConditions.RadiationDirect
-          + 0.25*EnvironmentConditions.RadiationDiffuse) * cos(AngleBound[i])
-         + 0.75*EnvironmentConditions.RadiationDiffuse * 0.5
-           * (cos(Boundaries[i].alphaInc) + 1));
-
-    QBoundAbsorp[i] =
-      -Boundaries[i].uBound * (1 - Boundaries[i].epsShading)
-      * (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers)
-      * (Boundaries[i].alphaBound / Boundaries[i].alphaBoundOut)
-      * ((EnvironmentConditions.RadiationDirect
-          + 0.25*EnvironmentConditions.RadiationDiffuse) * cos(AngleBound[i])
-         + 0.75*EnvironmentConditions.RadiationDiffuse * 0.5
-           * (cos(Boundaries[i].alphaInc) + 1));
-  end if;
-
-  // start comment // 11 Dec 22.00 commented
-  // 09 Dec 16.00
-  QBoundIn[i] =
-    -Boundaries[i].alphaBoundIn
-    * (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers)
-    * (Boundaries[i].TBoundIn - TZoneAct);
-  // end comment
-  if Boundaries[i].dBound > 1e-3 then
-    QBoundChange[i] =
-      -(Boundaries[i].lambdaBound / Boundaries[i].dBound)
-      * (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers)
-      * (Boundaries[i].TBoundOut - Boundaries[i].TBoundIn);
-  else
-    QBoundChange[i] = 0;
-  end if;
-
-  QHeatBridge[i] =
-    uHeatBridge
-    * (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers)
-    * (TZoneAct - TAmbientBound[i]);
-
-  //stat comment // 09 Dec 16.00
-  // *** THIS IS THE CRITICAL PART ***
-  QBoundIn[i] =
-    -Boundaries[i].alphaBoundIn
-    * (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers)
-    * (TBoundIn[i] - TZoneAct);     // <-- TZoneAct WITHOUT [i]
-
-  if Boundaries[i].dBound > 1e-3 then
-    QBoundChange[i] =
-      -(Boundaries[i].lambdaBound / Boundaries[i].dBound)
-      * (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers)
-      * (TBoundOut[i] - TBoundIn[i]);
-  else
-    QBoundChange[i] = 0;
-  end if;
-//
-  if Boundaries[i].groundContact then
-    QBoundOut[i] = QBoundChange[i];
-  else
-    QBoundOut[i] =
-      Boundaries[i].alphaBoundOut
-      * (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers)
-      * (Boundaries[i].TBoundOut - TAmbientBound[i])
-    + QBoundAbsorp[i];
-    // start comment // 09 Dec 16.00
-    QBoundOut[i] =
-      Boundaries[i].alphaBoundOut
-      * (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers)
-      * (TBoundOut[i] - TAmbientBound[i])
-    + QBoundAbsorp[i];
-    // end comment
-  end if;
-
-  QBound[i] =
-    Boundaries[i].uBound
-    * (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers)
-    * (TZoneAct - TAmbientBound[i])
-    + QBoundAbsorp[i];
-end for;
-
-/* 20 Dec FIX - COMMENTED OUT: This orphaned QHeatBridge[i] assignment was OUTSIDE the for loop 
-   (which ended at line 2251), creating 3 duplicate equations since QHeatBridge[i] is already 
-   assigned inside the main for loop at lines 2115-2118. This caused the "3 extra equations" error.
-// 13 Dec 18.00 copied from above for loop and pasted here
-  QHeatBridge[i] =
-    uHeatBridge
-    * (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers)
-    * (TZoneAct - TAmbientBound[i]);
-*/
- // 11 Dec 20.00
-// 10 Dec 20.00 just added --- DYNAMIC OR MASSLESS BOUNDARY TEMPERATURES ---
+// --- DYNAMIC OR MASSLESS BOUNDARY TEMPERATURES ---
 for i in 1:Bound loop
   if Boundaries[i].dBound > 1e-3 then
     // Dynamic internal node
@@ -2394,18 +1440,12 @@ for i in 1:Bound loop
 end for;
 
 // ============================================================================
-// HeatedZone_1.mo - COMPLETE ACTIVE CONNECT STATEMENTS SECTION
-// ============================================================================
-// This file contains ONLY the active (non-commented) connect statements
-// from HeatedZone_1.mo with their full annotations.
-//
-// These connect statements are located in lines 2691-2774 of the full file.
+// HeatedZone.mo - COMPLETE ACTIVE CONNECT STATEMENTS SECTION
 // ============================================================================
 
   // -------------------------------------------------------------------------
   // HEAT PORT CONNECTIONS (Thermal)
   // -------------------------------------------------------------------------
-
   // 1. Appliance load connected to internal convective gains
   connect(fourElements.intGainsConv, appLoad.port) annotation (Line(points={{28,4},{
           34,4},{34,64},{10,64}},      color={191,0,0}));
@@ -2420,14 +1460,10 @@ end for;
 
   // 4. Infiltration loss port_a connected to internal convective gains
   connect(infiltrationLoss.port_a, fourElements.intGainsConv) annotation (Line(
-        points={{54,-14},{38,-14},{38,4},{28,4}}, color={191,0,0}));
+        points={{54,3},{42,3},{42,4},{28,4}},     color={191,0,0}));
 
   // 5. External temperature source connected to infiltration loss port_b
 
-  /* // 20 Dec 12.00 6. Main heat port connected to internal convective gains
-  connect(heatPort, fourElements.intGainsConv) annotation (Line(points={{-106,42},
-          {-106,-12},{-26,-12},{-26,24},{34,24},{34,4},{28,4}}, color={191,0,0}));
-*/
   // -------------------------------------------------------------------------
   // SIGNAL CONNECTIONS (Real values)
   // -------------------------------------------------------------------------
@@ -2443,13 +1479,6 @@ end for;
   // 8. Zero solar radiation connected to fourElements
   connect(zeroSolRad.y, fourElements.solRad);
 
-  /* // 20 Dec FIX v3: Commented out - T_infiltration_air.T is already connected to ToutSig.y
-     // Having both creates circular equations
-  // 9. Outside temperature signal to source
-  connect(ToutSig.y, TOutSrc.T) annotation (Line(points={{-77,-42},{-64,-42},{-64,
-          -38},{-56,-38}}, color={0,0,127}));
-  */
-     // END 20 Dec FIX v3
 
   // 10. Occupant load Q_flow from constant
 
@@ -2459,66 +1488,23 @@ end for;
   connect(T_infiltration_air.T, ToutSig.y) annotation (Line(points={{90,0},{90,-58},
           {-78,-58},{-78,-42},{-77,-42}}, color={0,0,127}));
 
-// ============================================================================
-// COMMENTED OUT CONNECTIONS (for reference)
-// These are intentionally disabled to avoid duplicate/conflicting equations
-// ============================================================================
 
-  /* // 20 Dec FIX: COMMENTED OUT - DUPLICATE CONNECTION
-     // This connects occLoad.port to fourElements.intGainsConv
-     // but the same connection already exists above:
-     // connect(fourElements.intGainsConv, occLoad.port)
-     // Having both creates an extra equation causing structural singularity
-  connect(occLoad.port, fourElements.intGainsConv)
-    annotation (Line(points={{80,66},{54,66},{54,4},{28,4}}, color={191,0,0}));
-  */
-     // END 20 Dec FIX
-
-  /* // 20 Dec FIX: COMMENTED OUT - CONFLICTS WITH EQUATION
-     // This connect creates: internalGains.Q_flow = qInt.y = HeatCoolLoad (without scaling)
-     // But line 2371 already has: internalGains.Q_flow = HeatCoolLoad * 1000 (kW -> W)
-     // The equation on line 2371 has the correct unit conversion, so this connect must be removed
-  connect(qInt.y, internalGains.Q_flow) annotation (Line(points={{-151,4},{-92,4},
-          {-92,5},{-84,5}}, color={0,0,127}));
-  */
-     // END 20 Dec FIX
 
   connect(senTZone.port, fourElements.intGainsConv) annotation (Line(points={{-140,
           -22},{-146,-22},{-146,-4},{-106,-4},{-106,-12},{-26,-12},{-26,24},{34,
           24},{34,4},{28,4}}, color={191,0,0}));
-  /* // 21 Dec FIX v8: Commented out - TZone is already set by TZone = fourElements.TAir;
-*/
-   // END 21 Dec FIX v8
+
   connect(T_infiltration_air.port, infiltrationLoss.port_b) annotation (Line(
-        points={{112,0},{118,0},{118,16},{80,16},{80,-14},{74,-14}}, color={191,
+        points={{112,0},{118,0},{118,16},{80,16},{80,3},{72,3}},     color={191,
           0,0}));
-  /* // 20 Dec FIX: Commented out because qInt and QIntConv are commented out in declarations
-  connect(qInt.y, QIntConv.Q_flow) annotation (Line(points={{-29,46},{-6,46},{-6,
-    44},{2,44}}, color={0,0,127}));
-  */
-     // END 20 Dec FIX
-    /* // 20 Dec 12.00
-  connect(QIntConv.port, fourElements.intGainsConv)
-    annotation (Line(points={{22,44},{34,44},{34,4},{28,4}}, color={191,0,0}));
-  */
-  // 20 Dec FIX: Moved out of comment block - QIntRad.Q_flow needs to be connected
+
 
   connect(QIntRad.port, fourElements.intGainsRad) annotation (Line(points={{-30,
           24},{-24,24},{-24,26},{36,26},{36,8},{28,8}}, color={191,0,0}));
-  /* // 21 Dec 10.00  
-  connect(TZoneRef, TSetSrc.T)
-    annotation (Line(points={{98,40},{118,40},{118,24}}, color={0,0,127}));
-  connect(TSetSrc.port, HVAC.port_a)
-  annotation (Line(points={{140,24},{152,24}}, color={191,0,0}));
-  */
+
   connect(HVAC.port_b, fourElements.intGainsConv) annotation (Line(points={{172,
           24},{172,84},{30,84},{30,44},{34,44},{34,4},{28,4}}, color={191,0,0}));
-  /* // 20 Dec FIX v3: Commented out - T_infiltration_air.port is already connected to infiltrationLoss.port_b
-     // Having both creates duplicate/circular equations
-  connect(TOutSrc.port, infiltrationLoss.port_b) annotation (Line(points={{-34,-38},
-          {80,-38},{80,-14},{74,-14}}, color={191,0,0}));
-  */
-     // END 20 Dec FIX v3
+
 
   // ============================================================================
   // VARIABLE INTERNAL GAINS CONNECTIONS (28 Dec - CORRECTED)
@@ -2528,4 +1514,6 @@ end for;
   connect(P_appliances_W, appLoad.Q_flow);
   connect(Q_radiation_W, QIntRad.Q_flow);
 
+  connect(heatPort, HVAC.port_a) annotation (Line(points={{-106,42},{78,42},{78,
+          20},{146,20},{146,24},{152,24}}, color={191,0,0}));
 end HeatedZone;
