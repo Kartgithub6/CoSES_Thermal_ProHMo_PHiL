@@ -1,6 +1,6 @@
 within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
 model ThreeZoneBuilding_PHiL_optimized
-  "PHiL wrapper for OPTIMIZED topology - Interface for hardware-in-the-loop testing"
+  "PHiL wrapper for OPTIMIZED topology - Interface for power hardware-in-the-loop testing"
 
   replaceable package Medium=Modelica.Media.Water.StandardWater;
   inner Modelica.Fluid.System system(
@@ -8,9 +8,9 @@ model ThreeZoneBuilding_PHiL_optimized
     massDynamics=Modelica.Fluid.Types.Dynamics.SteadyStateInitial)
     annotation(Placement(visible=true, transformation(origin={-190,170}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // PHiL INPUTS - From Physical Hardware
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   Modelica.Blocks.Interfaces.RealInput STM_HCVLaM_degC(start=60)
     "Supply temperature from hardware [°C]"
     annotation(Placement(visible=true, transformation(origin={-240,112}, extent={{-20,-20},{20,20}}, rotation=0),
@@ -26,9 +26,9 @@ model ThreeZoneBuilding_PHiL_optimized
     annotation(Placement(visible=true, transformation(origin={-240,12}, extent={{-20,-20},{20,20}}, rotation=0),
       iconTransformation(origin={-110,50}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // PHiL OUTPUTS - To Physical Hardware
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   Modelica.Blocks.Interfaces.RealOutput T_roomIs_degC
     "Living room temperature [°C]"
     annotation(Placement(visible=true, transformation(origin={230,114}, extent={{-10,-10},{10,10}}, rotation=0),
@@ -69,9 +69,9 @@ model ThreeZoneBuilding_PHiL_optimized
     annotation(Placement(visible=true, transformation(origin={230,-68}, extent={{-10,-10},{10,10}}, rotation=0),
       iconTransformation(origin={110,-50}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // INTERNAL GAINS INPUTS
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   Modelica.Blocks.Interfaces.RealInput nPersons_living_in(start=2)
     "Number of people in living room"
     annotation(Placement(visible=true, transformation(origin={-240,-12}, extent={{-20,-20},{20,20}}, rotation=0),
@@ -102,9 +102,9 @@ model ThreeZoneBuilding_PHiL_optimized
     annotation(Placement(visible=true, transformation(origin={308,-52}, extent={{-20,-20},{20,20}}, rotation=180),
       iconTransformation(origin={110,-90}, extent={{-10,-10},{10,10}}, rotation=180)));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // PARAMETERS - Delegated to building model
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   parameter Modelica.Units.SI.Area AZone_cellar=80;
   parameter Modelica.Units.SI.Area AZone_living=100;
   parameter Modelica.Units.SI.Area AZone_roof=60;
@@ -125,9 +125,9 @@ model ThreeZoneBuilding_PHiL_optimized
   parameter Real yMin_living=0.03;
   parameter Real yMin_roof=0.08;
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // FLUID BOUNDARIES - PHiL Interface
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   Modelica.Fluid.Sources.Boundary_pT supply(
     redeclare package Medium=Medium,
     use_p_in=false,
@@ -150,9 +150,23 @@ model ThreeZoneBuilding_PHiL_optimized
     "Return temperature sensor"
     annotation(Placement(visible=true, transformation(origin={-70,-50}, extent={{10,-10},{-10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // Individual zone heating powers (from radiator Q_flow)
+  Real P_heating_living_kW(unit="kW") = building.living_hydSys.radiator.Q_flow / 1000.0
+    "Living room heating power [kW]";
+
+  Real P_heating_cellar_kW(unit="kW") = building.cellar_hydSys.radiator.Q_flow / 1000.0
+    "Cellar heating power [kW]";
+
+  Real P_heating_roof_kW(unit="kW") = building.roof_hydSys.radiator.Q_flow / 1000.0
+    "Roof office heating power [kW]";
+
+  // Total heating power
+  Real P_heating_total_kW(unit="kW") = P_heating_living_kW + P_heating_cellar_kW + P_heating_roof_kW
+    "Total heating power consumption [kW]";
+
+  // ============================================================================
   // UNIT CONVERSIONS - °C ↔ K
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   Modelica.Blocks.Math.Add toKelvin(k1=1, k2=1)
     "Convert supply temperature °C → K"
     annotation(Placement(visible=true, transformation(origin={-170,86}, extent={{-10,-10},{10,10}}, rotation=0)));
@@ -185,9 +199,9 @@ model ThreeZoneBuilding_PHiL_optimized
     "Convert flow m³/s → L/min"
     annotation(Placement(visible=true, transformation(origin={190,4}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // BUILDING MODEL - OPTIMIZED TOPOLOGY
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis.ThreeZoneBuilding_optimized building(
     redeclare package Medium=Medium,
     AZone_cellar=AZone_cellar,
@@ -210,23 +224,23 @@ model ThreeZoneBuilding_PHiL_optimized
     yMin_living=yMin_living,
     yMin_roof=yMin_roof)
     "Core building model with optimized hydraulics"
-    annotation(Placement(visible=true, transformation(origin={-21,-19}, extent={{-39,-39},{39,39}}, rotation=0)));
+    annotation(Placement(visible=true, transformation(origin={-1,-9},   extent={{-39,-39},{39,39}}, rotation=0)));
 
 equation
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // FLUID CONNECTIONS
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   connect(supply.ports[1], building.port_a)
-    annotation(Line(points={{-110,64},{-90,64},{-90,4.4},{-60,4.4}}, color={0,127,255}, thickness=0.5));
+    annotation(Line(points={{-110,64},{-56,64},{-56,14.4},{-40,14.4}},
+                                                                     color={0,127,255}, thickness=0.5));
   connect(building.port_b, TReturn.port_a)
-    annotation(Line(points={{-60,-42.4},{-60,-80},{-50,-80},{-50,-50},{-60,-50}},
-                                                                                color={0,127,255}, thickness=0.5));
+    annotation(Line(points={{-40,-32.4},{-54,-32.4},{-54,-50},{-60,-50}},       color={0,127,255}, thickness=0.5));
   connect(TReturn.port_b, return_sink.ports[1])
     annotation(Line(points={{-80,-50},{-130,-50}}, color={0,127,255}, thickness=0.5));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // INPUT CONVERSIONS & CONNECTIONS
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // Supply temperature: °C → K
   connect(STM_HCVLaM_degC, toKelvin.u1)
     annotation(Line(points={{-240,112},{-200,112},{-200,92},{-182,92}}, color={0,0,127}));
@@ -237,47 +251,45 @@ equation
 
   // Internal gains - direct pass-through
   connect(nPersons_living_in, building.nPersons_living)
-    annotation(Line(points={{-240,-12},{-180,-12},{-180,0.5},{-63.9,0.5}},
+    annotation(Line(points={{-240,-12},{-56,-12},{-56,10.5},{-43.9,10.5}},
                                                                          color={0,0,127}));
   connect(nPersons_cellar_in, building.nPersons_cellar)
-    annotation(Line(points={{-240,-50},{-180,-50},{-180,12.2},{-63.9,12.2}},
+    annotation(Line(points={{-240,-50},{-136,-50},{-136,22.2},{-43.9,22.2}},
                                                                          color={0,0,127}));
   connect(nPersons_roof_in, building.nPersons_roof)
-    annotation(Line(points={{-240,-92},{-170,-92},{-170,-11.2},{-63.9,-11.2}},
-                                                                         color={0,0,127}));
+    annotation(Line(points={{-240,-92},{-52,-92},{-52,-2},{-54,-2},{-54,-1.2},{-43.9,
+          -1.2}},                                                        color={0,0,127}));
 
   connect(P_appliances_living_W_in, building.P_appliances_living_W)
-    annotation(Line(points={{308,-16},{280,-16},{280,-100},{40,-100},{40,0.5},{21.9,
-          0.5}},                                                                         color={0,0,127}));
+    annotation(Line(points={{308,-16},{246,-16},{246,-20},{212,-20},{212,-18},{50,
+          -18},{50,10.5},{41.9,10.5}},                                                   color={0,0,127}));
   connect(P_appliances_cellar_W_in, building.P_appliances_cellar_W)
-    annotation(Line(points={{310,14},{290,14},{290,-110},{50,-110},{50,12.2},{21.9,
-          12.2}},                                                                      color={0,0,127}));
+    annotation(Line(points={{310,14},{246,14},{246,98},{50,98},{50,22.2},{41.9,22.2}}, color={0,0,127}));
   connect(P_appliances_roof_W_in, building.P_appliances_roof_W)
-    annotation(Line(points={{308,-52},{275,-52},{275,-105},{45,-105},{45,-11.2},
-          {21.9,-11.2}},                                                                 color={0,0,127}));
+    annotation(Line(points={{308,-52},{246,-52},{246,-44},{214,-44},{214,-34},{166,
+          -34},{166,-26},{50,-26},{50,-22},{48,-22},{48,-1.2},{41.9,-1.2}},              color={0,0,127}));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // OUTPUT CONVERSIONS & CONNECTIONS
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // Zone temperatures: K → °C
   connect(building.TZone_living, toCelsius_living.u1)
-    annotation(Line(points={{21.9,-7.3},{140,-7.3},{140,120},{178,120}},
+    annotation(Line(points={{41.9,2.7},{48,2.7},{48,120},{178,120}},
                                                                  color={0,0,127}));
   connect(kelvinOffset2.y, toCelsius_living.u2)
     annotation(Line(points={{156.6,10},{165,10},{165,108},{178,108}}, color={0,0,127}));
   connect(toCelsius_living.y, T_roomIs_degC)
     annotation(Line(points={{201,114},{230,114}}, color={0,0,127}));
-
   connect(building.TZone_cellar, toCelsius_cellar.u1)
-    annotation(Line(points={{21.9,4.4},{135,4.4},{135,88},{178,88}},
-                                                                 color={0,0,127}));
+    annotation(Line(points={{41.9,14.4},{116,14.4},{116,64},{168,64},{168,88},{178,
+          88}},                                                  color={0,0,127}));
   connect(kelvinOffset2.y, toCelsius_cellar.u2)
     annotation(Line(points={{156.6,10},{170,10},{170,76},{178,76}}, color={0,0,127}));
   connect(toCelsius_cellar.y, T_cellarIs_degC)
     annotation(Line(points={{201,82},{230,82}}, color={0,0,127}));
 
   connect(building.TZone_roof, toCelsius_roof.u1)
-    annotation(Line(points={{21.9,-19},{130,-19},{130,56},{178,56}},
+    annotation(Line(points={{41.9,-9},{118,-9},{118,56},{178,56}},
                                                                  color={0,0,127}));
   connect(kelvinOffset2.y, toCelsius_roof.u2)
     annotation(Line(points={{156.6,10},{175,10},{175,44},{178,44}}, color={0,0,127}));
@@ -294,35 +306,127 @@ equation
 
   // Flow rate: m³/s → L/min
   connect(building.qvRef, flowConvertOut.u)
-    annotation(Line(points={{21.9,-46.3},{125,-46.3},{125,4},{178,4}},
+    annotation(Line(points={{41.9,-36.3},{168,-36.3},{168,4},{178,4}},
                                                                  color={0,0,127}));
   connect(flowConvertOut.y, SFW_HCRLbM_Set_l_per_min)
     annotation(Line(points={{201,4},{230,4}}, color={0,0,127}));
 
   // Valve positions - direct pass-through
   connect(building.valve_cellar_opening, valve_cellar_opening)
-    annotation(Line(points={{21.9,-30.7},{110,-30.7},{110,-20},{230,-20}},
+    annotation(Line(points={{41.9,-20.7},{214,-20.7},{214,-20},{230,-20}},
                                                                    color={0,0,127}));
   connect(building.valve_living_opening, valve_living_opening)
-    annotation(Line(points={{21.9,-38.5},{115,-38.5},{115,-44},{230,-44}},
+    annotation(Line(points={{41.9,-28.5},{210,-28.5},{210,-44},{230,-44}},
                                                                  color={0,0,127}));
   connect(building.valve_roof_opening, valve_roof_opening)
-    annotation(Line(points={{21.9,-54.1},{120,-54.1},{120,-68},{230,-68}},
+    annotation(Line(points={{41.9,-44.1},{208,-44.1},{208,-68},{230,-68}},
                                                                      color={0,0,127}));
 
-  annotation(
-    Icon(graphics={
-      Rectangle(extent={{-100,-100},{100,100}}, lineColor={0,0,0}, fillColor={230,230,230}, fillPattern=FillPattern.Solid),
-      Text(extent={{-80,95},{80,75}}, textString="PHiL", lineColor={255,0,0}),
-      Text(extent={{-80,70},{80,50}}, textString="OPTIMIZED", lineColor={0,0,255}),
-      Rectangle(extent={{-80,40},{80,-40}}, lineColor={0,0,0}, fillColor={255,255,255}, fillPattern=FillPattern.Solid),
-      Text(extent={{-75,35},{75,15}}, textString="3-Zone", lineColor={0,0,0}),
-      Text(extent={{-75,10},{75,-10}}, textString="Building", lineColor={0,0,0}),
-      Polygon(points={{-90,0},{-80,5},{-80,-5},{-90,0}}, lineColor={0,127,255}, fillColor={0,127,255}, fillPattern=FillPattern.Solid),
-      Polygon(points={{90,0},{80,5},{80,-5},{90,0}}, lineColor={0,127,255}, fillColor={0,127,255}, fillPattern=FillPattern.Solid),
-      Line(points={{-80,0},{-100,0}}, color={0,127,255}, thickness=1),
-      Line(points={{80,0},{100,0}}, color={0,127,255}, thickness=1),
-      Text(extent={{-100,-75},{100,-95}}, textString="Hardware Interface", lineColor={0,0,0})}),
+annotation(
+    Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
+      graphics={
+        Rectangle(
+          extent={{-100,100},{100,-100}},
+          lineColor={0,0,0},
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-80,70},{80,-70}},
+          lineColor={0,0,255},
+          fillColor={170,213,255},
+          fillPattern=FillPattern.Solid,
+          lineThickness=1),
+        Polygon(
+          points={{-90,70},{0,95},{90,70},{-90,70}},
+          lineColor={139,69,19},
+          fillColor={205,133,63},
+          fillPattern=FillPattern.Solid),
+        Ellipse(
+          extent={{60,95},{75,85}},
+          lineColor={200,200,200},
+          fillColor={230,230,230},
+          fillPattern=FillPattern.Solid),
+        Ellipse(
+          extent={{65,92},{82,80}},
+          lineColor={200,200,200},
+          fillColor={230,230,230},
+          fillPattern=FillPattern.Solid),
+        Ellipse(
+          extent={{70,95},{85,82}},
+          lineColor={200,200,200},
+          fillColor={230,230,230},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-100,60},{-80,55}},
+          lineColor={0,0,127},
+          fillColor={0,0,127},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-100,40},{-80,35}},
+          lineColor={0,0,127},
+          fillColor={0,0,127},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-100,20},{-80,15}},
+          lineColor={0,0,127},
+          fillColor={0,0,127},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{80,60},{100,55}},
+          lineColor={255,0,0},
+          fillColor={255,0,0},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{80,40},{100,35}},
+          lineColor={255,0,0},
+          fillColor={255,0,0},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{80,20},{100,15}},
+          lineColor={255,0,0},
+          fillColor={255,0,0},
+          fillPattern=FillPattern.Solid),
+        Text(
+          extent={{-75,60},{75,35}},
+          textString="PHiL Optimized",
+          textColor={0,0,0},
+          textStyle={TextStyle.Bold}),
+        Text(
+          extent={{-75,25},{75,5}},
+          textString="%name",
+          textColor={0,0,127}),
+        Text(
+          extent={{-75,-5},{75,-25}},
+          textString=DynamicSelect("SmallHouse", String(buildingData)),
+          textColor={28,108,200},
+          textStyle={TextStyle.Bold}),
+        Text(
+          extent={{-75,-35},{75,-55}},
+          textString="without Weather",
+          textColor={100,100,100},
+          fontSize=8)}
+        // White background
+
+        // Main building rectangle
+
+        // Building roof (triangle)
+
+        // Weather indicator - small cloud in corner
+
+        // PHiL connectors (left side - inputs)
+
+        // PHiL connectors (right side - outputs)
+
+        // Text labels - well spaced, no overlap
+
+        // Dynamic building type display
+
+        // Weather indicator text
+
+        // Flow conversion indicator
+),
+
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-280,-200},{280,200}})),
     Documentation(info="<html>
 <h4>ThreeZoneBuilding_PHiL_optimized</h4>
 

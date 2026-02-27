@@ -1,567 +1,567 @@
 within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
 model ThreeZoneBuilding_optimized
-  "Three-zone building with OPTIMIZED hydraulic topology - REORGANIZED: Roof → Living → Cellar"
+  "Three-zone building with Optimized hydraulic topology - reorganized: Roof -> Living -> Cellar"
+
+  // ============================================================================
+  // COORDINATE LAYOUT GUIDE (diagram extent -230,-215 to 260,215)
+  //
+  //  Zone rows (Y centerlines):   CELLAR = +140 | LIVING = 0 | ROOF = -140
+  //
+  //  Column X positions:
+  //   -222 : external inputs/outputs (nPersons, solRad, port_a/b)
+  //   -185 : qvMedium sensor
+  //   -155 : TMedium sensor
+  //   -175 : TRefConst setpoints  (per-zone row)
+  //   -130 : PI controllers       (per-zone row)
+  //    -50 : control valves       (per-zone row)
+  //      0 : hydSys blocks        (per-zone row)
+  //     47 : WindowShading / Q_radiation constants (per-zone row)
+  //    110 : building zone blocks (per-zone row)
+  //    162 : qv_approx gains      (per-zone row)
+  //    158 : teeMergeCellarRoof
+  //    175 : teeMergeMain
+  //    196 : TReturn
+  //    240 : real outputs
+  //   -105 : teeMain (supply splitter, Y=70 midway between Living/Cellar)
+  //    -80 : teeCellarRoof (Y=70, splits Cellar up / Roof down)
+  // ============================================================================
 
   inner Modelica.Fluid.System system(
     energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyStateInitial,
     massDynamics=Modelica.Fluid.Types.Dynamics.SteadyStateInitial,
     T_ambient=278.15)
-    annotation(Placement(visible=true, transformation(origin={-170,170}, extent={{-10,-10},{10,10}}, rotation=0)));
+    annotation(Placement(visible=true, transformation(origin={-200,205}, extent={{-10,-10},{10,10}}, rotation=0)));
 
   replaceable package Medium = Modelica.Media.Water.StandardWater;
-  // ═══════════════════════════════════════════════════════════════════
+
+  // ============================================================================
   // FLUID PORTS
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   Modelica.Fluid.Interfaces.FluidPort_a port_a(redeclare package Medium=Medium)
     "Supply water inlet"
-    annotation(Placement(visible=true, transformation(origin={-200,60},extent={{-10,-10},{10,10}}, rotation=0),
+    annotation(Placement(visible=true, transformation(origin={-222,10}, extent={{-10,-10},{10,10}}, rotation=0),
       iconTransformation(origin={-100,60}, extent={{-10,-10},{10,10}}, rotation=0)));
 
   Modelica.Fluid.Interfaces.FluidPort_b port_b(redeclare package Medium=Medium)
     "Return water outlet"
-    annotation(Placement(visible=true, transformation(origin={-200,-62},  extent={{-10,-10},{10,10}}, rotation=0),
+    annotation(Placement(visible=true, transformation(origin={-222,-195}, extent={{-10,-10},{10,10}}, rotation=0),
       iconTransformation(origin={-100,-60}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // OUTPUTS - System Performance
-  // ═══════════════════════════════════════════════════════════════════
-  Modelica.Blocks.Interfaces.RealOutput qvRef
-    "Total volume flow rate [m³/s]"
-    annotation(Placement(visible=true, transformation(origin={210,-100}, extent={{-10,-10},{10,10}}, rotation=0),
-      iconTransformation(origin={110,-70}, extent={{-10,-10},{10,10}}, rotation=0)));
-
-  // ⭐ REORGANIZED ORDER: Roof → Living → Cellar
-  Modelica.Blocks.Interfaces.RealOutput TZone_roof
-    "Roof office temperature [K]"
-    annotation(Placement(visible=true, transformation(origin={210,-60}, extent={{-10,-10},{10,10}}, rotation=0),
-      iconTransformation(origin={110,0}, extent={{-10,-10},{10,10}}, rotation=0)));
-
-  Modelica.Blocks.Interfaces.RealOutput TZone_living
-    "Living room temperature [K]"
-    annotation(Placement(visible=true, transformation(origin={210,40}, extent={{-10,-10},{10,10}}, rotation=0),
-      iconTransformation(origin={110,30}, extent={{-10,-10},{10,10}}, rotation=0)));
-
+  // ============================================================================
+  // OUTPUTS
+  // ============================================================================
   Modelica.Blocks.Interfaces.RealOutput TZone_cellar
     "Cellar temperature [K]"
-    annotation(Placement(visible=true, transformation(origin={210,140}, extent={{-10,-10},{10,10}}, rotation=0),
+    annotation(Placement(visible=true, transformation(origin={240,140}, extent={{-10,-10},{10,10}}, rotation=0),
       iconTransformation(origin={110,60}, extent={{-10,-10},{10,10}}, rotation=0)));
-
-  Modelica.Blocks.Interfaces.RealOutput valve_roof_opening
-    "Roof valve position [0-1]"
-    annotation(Placement(visible=true, transformation(origin={210,-140}, extent={{-10,-10},{10,10}}, rotation=0),
-      iconTransformation(origin={110,-90}, extent={{-10,-10},{10,10}}, rotation=0)));
-
-  Modelica.Blocks.Interfaces.RealOutput valve_living_opening
-    "Living valve position [0-1]"
-    annotation(Placement(visible=true, transformation(origin={210,0}, extent={{-10,-10},{10,10}}, rotation=0),
-      iconTransformation(origin={110,-50}, extent={{-10,-10},{10,10}}, rotation=0)));
 
   Modelica.Blocks.Interfaces.RealOutput valve_cellar_opening
     "Cellar valve position [0-1]"
-    annotation(Placement(visible=true, transformation(origin={210,100}, extent={{-10,-10},{10,10}}, rotation=0),
+    annotation(Placement(visible=true, transformation(origin={240,115}, extent={{-10,-10},{10,10}}, rotation=0),
       iconTransformation(origin={110,-30}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // INPUTS - Occupancy (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-  Modelica.Blocks.Interfaces.RealInput nPersons_roof(start=0)
-    "Number of people in roof office"
-    annotation(Placement(visible=true, transformation(origin={-220,118}, extent={{-10,-10},{10,10}}, rotation=0),
-      iconTransformation(origin={-110,20}, extent={{-10,-10},{10,10}}, rotation=0)));
+  Modelica.Blocks.Interfaces.RealOutput TZone_living
+    "Living room temperature [K]"
+    annotation(Placement(visible=true, transformation(origin={240,0}, extent={{-10,-10},{10,10}}, rotation=0),
+      iconTransformation(origin={110,30}, extent={{-10,-10},{10,10}}, rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealOutput valve_living_opening
+    "Living valve position [0-1]"
+    annotation(Placement(visible=true, transformation(origin={240,-25}, extent={{-10,-10},{10,10}}, rotation=0),
+      iconTransformation(origin={110,-50}, extent={{-10,-10},{10,10}}, rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealOutput TZone_roof
+    "Roof office temperature [K]"
+    annotation(Placement(visible=true, transformation(origin={240,-140}, extent={{-10,-10},{10,10}}, rotation=0),
+      iconTransformation(origin={110,0}, extent={{-10,-10},{10,10}}, rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealOutput valve_roof_opening
+    "Roof valve position [0-1]"
+    annotation(Placement(visible=true, transformation(origin={240,-165}, extent={{-10,-10},{10,10}}, rotation=0),
+      iconTransformation(origin={110,-90}, extent={{-10,-10},{10,10}}, rotation=0)));
+
+  Modelica.Blocks.Interfaces.RealOutput qvRef
+    "Total volume flow rate [m3/s]"
+    annotation(Placement(visible=true, transformation(origin={240,-200}, extent={{-10,-10},{10,10}}, rotation=0),
+      iconTransformation(origin={110,-70}, extent={{-10,-10},{10,10}}, rotation=0)));
+
+  // ============================================================================
+  // INPUTS - Occupancy
+  // ============================================================================
+  Modelica.Blocks.Interfaces.RealInput nPersons_cellar(start=0)
+    "Number of people in cellar"
+    annotation(Placement(visible=true, transformation(origin={-222,185}, extent={{-10,-10},{10,10}}, rotation=0),
+      iconTransformation(origin={-110,80}, extent={{-10,-10},{10,10}}, rotation=0)));
 
   Modelica.Blocks.Interfaces.RealInput nPersons_living(start=0)
     "Number of people in living room"
-    annotation(Placement(visible=true, transformation(origin={-220,140}, extent={{-10,-10},{10,10}}, rotation=0),
+    annotation(Placement(visible=true, transformation(origin={-222,165}, extent={{-10,-10},{10,10}}, rotation=0),
       iconTransformation(origin={-110,50}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  Modelica.Blocks.Interfaces.RealInput nPersons_cellar(start=0)
-    "Number of people in cellar"
-    annotation(Placement(visible=true, transformation(origin={-220,180}, extent={{-10,-10},{10,10}}, rotation=0),
-      iconTransformation(origin={-110,80}, extent={{-10,-10},{10,10}}, rotation=0)));
+  Modelica.Blocks.Interfaces.RealInput nPersons_roof(start=0)
+    "Number of people in roof office"
+    annotation(Placement(visible=true, transformation(origin={-222,145}, extent={{-10,-10},{10,10}}, rotation=0),
+      iconTransformation(origin={-110,20}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // INPUTS - Appliance Loads (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-  Modelica.Blocks.Interfaces.RealInput P_appliances_roof_W(start=50)
-    "Appliance power in roof office [W]"
-    annotation(Placement(visible=true, transformation(origin={230,100}, extent={{-10,-10},{10,10}}, rotation=180),
-      iconTransformation(origin={110,20}, extent={{-10,-10},{10,10}}, rotation=180)));
+  // ============================================================================
+  // INPUTS - Appliance Loads
+  // ============================================================================
+  Modelica.Blocks.Interfaces.RealInput P_appliances_cellar_W(start=50)
+    "Appliance power in cellar [W]"
+    annotation(Placement(visible=true, transformation(origin={250,140}, extent={{-10,-10},{10,10}}, rotation=180),
+      iconTransformation(origin={110,80}, extent={{-10,-10},{10,10}}, rotation=180)));
 
   Modelica.Blocks.Interfaces.RealInput P_appliances_living_W(start=200)
     "Appliance power in living room [W]"
-    annotation(Placement(visible=true, transformation(origin={230,140}, extent={{-10,-10},{10,10}}, rotation=180),
+    annotation(Placement(visible=true, transformation(origin={250,0}, extent={{-10,-10},{10,10}}, rotation=180),
       iconTransformation(origin={110,50}, extent={{-10,-10},{10,10}}, rotation=180)));
 
-  Modelica.Blocks.Interfaces.RealInput P_appliances_cellar_W(start=50)
-    "Appliance power in cellar [W]"
-    annotation(Placement(visible=true, transformation(origin={230,180}, extent={{-10,-10},{10,10}}, rotation=180),
-      iconTransformation(origin={110,80}, extent={{-10,-10},{10,10}}, rotation=180)));
+  Modelica.Blocks.Interfaces.RealInput P_appliances_roof_W(start=50)
+    "Appliance power in roof office [W]"
+    annotation(Placement(visible=true, transformation(origin={250,-140}, extent={{-10,-10},{10,10}}, rotation=180),
+      iconTransformation(origin={110,20}, extent={{-10,-10},{10,10}}, rotation=180)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // PARAMETERS - Zone Geometry (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-  parameter Modelica.Units.SI.Area AZone_roof=60 "Roof office floor area";
-  parameter Modelica.Units.SI.Area AZone_living=100 "Living room floor area";
-  parameter Modelica.Units.SI.Area AZone_cellar=80 "Cellar floor area";
-  parameter Modelica.Units.SI.Length hZone_roof=2.3 "Roof office height";
-  parameter Modelica.Units.SI.Length hZone_living=2.5 "Living room height";
-  parameter Modelica.Units.SI.Length hZone_cellar=2.2 "Cellar height";
+  // ============================================================================
+  // INPUTS - Solar Radiation
+  // ============================================================================
+  Modelica.Blocks.Interfaces.RealInput solRad_roof[1]
+    "Solar radiation - roof zone [W/m2]"
+    annotation(Placement(visible=true, transformation(origin={-222,-145}, extent={{-10,-10},{10,10}}, rotation=0),
+      iconTransformation(origin={-110,-20}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // PARAMETERS - Temperature Setpoints (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-  parameter Modelica.Units.SI.Temperature TRef_roof=293.15 "Roof setpoint 20°C";
-  parameter Modelica.Units.SI.Temperature TRef_living=293.15 "Living setpoint 20°C";
-  parameter Modelica.Units.SI.Temperature TRef_cellar=291.15 "Cellar setpoint 18°C";
-  parameter Modelica.Units.SI.Temperature TZoneInit_roof=290.15 "Roof initial temperature";
-  parameter Modelica.Units.SI.Temperature TZoneInit_living=293.15 "Living initial temperature";
-  parameter Modelica.Units.SI.Temperature TZoneInit_cellar=291.15 "Cellar initial temperature";
+  Modelica.Blocks.Interfaces.RealInput solRad_living[1]
+    "Solar radiation - living zone [W/m2]"
+    annotation(Placement(visible=true, transformation(origin={-222,-165}, extent={{-10,-10},{10,10}}, rotation=0),
+      iconTransformation(origin={-110,-50}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
+  Modelica.Blocks.Interfaces.RealInput solRad_cellar[1]
+    "Solar radiation - cellar zone [W/m2]"
+    annotation(Placement(visible=true, transformation(origin={-222,-185}, extent={{-10,-10},{10,10}}, rotation=0),
+      iconTransformation(origin={-110,-80}, extent={{-10,-10},{10,10}}, rotation=0)));
+
+  // ============================================================================
+  // PARAMETERS - Zone Geometry
+  // ============================================================================
+  parameter Modelica.Units.SI.Area AZone_roof=60;
+  parameter Modelica.Units.SI.Area AZone_living=100;
+  parameter Modelica.Units.SI.Area AZone_cellar=80;
+  parameter Modelica.Units.SI.Length hZone_roof=2.3;
+  parameter Modelica.Units.SI.Length hZone_living=2.5;
+  parameter Modelica.Units.SI.Length hZone_cellar=2.2;
+
+  // ============================================================================
+  // PARAMETERS - Temperature Setpoints
+  // ============================================================================
+  parameter Modelica.Units.SI.Temperature TRef_roof=293.15;
+  parameter Modelica.Units.SI.Temperature TRef_living=293.15;
+  parameter Modelica.Units.SI.Temperature TRef_cellar=291.15;
+  parameter Modelica.Units.SI.Temperature TZoneInit_roof=290.15;
+  parameter Modelica.Units.SI.Temperature TZoneInit_living=293.15;
+  parameter Modelica.Units.SI.Temperature TZoneInit_cellar=291.15;
+
+  // ============================================================================
   // PARAMETERS - Control
-  // ═══════════════════════════════════════════════════════════════════
-  parameter Boolean roofHeat=true "Enable roof heating";
-  parameter Boolean cellarHeat=true "Enable cellar heating";
-  parameter Real k_PI=0.3 "PI proportional gain";
-  parameter Modelica.Units.SI.Time Ti_PI=500 "PI integral time";
+  // ============================================================================
+  parameter Boolean roofHeat=true;
+  parameter Boolean cellarHeat=true;
+  parameter Real k_PI=0.3;
+  parameter Modelica.Units.SI.Time Ti_PI=500;
+  parameter Real yMin_roof=0.02;
+  parameter Real yMin_living=0.02;
+  parameter Real yMin_cellar=0.01;
 
-  // ⭐⭐⭐ OPTIMIZED VALVE MINIMUMS (Roof → Living → Cellar)
-  parameter Real yMin_roof=0.02 " 18 Jan Reduced to 3% Roof valve minimum 8%";
-  parameter Real yMin_living=0.02 "Living valve minimum 3% (priority zone)";
-  parameter Real yMin_cellar=0.01 "Reduced from 5% to 2% Cellar valve minimum 5% (REDUCED from 20%!)";
-
-  // ═══════════════════════════════════════════════════════════════════
-  // FLUID SENSORS
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // FLUID SENSORS  (supply header, x = -185 and -155, y = 10)
+  // ============================================================================
   Modelica.Fluid.Sensors.VolumeFlowRate qvMedium(redeclare package Medium=Medium)
-    "Volumetric flow rate sensor"
-    annotation(Placement(visible=true, transformation(origin={-168,60},extent={{-10,-10},{10,10}}, rotation=0)));
+    annotation(Placement(visible=true, transformation(origin={-185,10}, extent={{-10,-10},{10,10}}, rotation=0)));
 
   Modelica.Fluid.Sensors.TemperatureTwoPort TMedium(redeclare package Medium=Medium)
-    "Supply temperature sensor"
-    annotation(Placement(visible=true, transformation(origin={-136,60},extent={{-10,-10},{10,10}}, rotation=0)));
+    annotation(Placement(visible=true, transformation(origin={-155,10}, extent={{-10,-10},{10,10}}, rotation=0)));
 
   Modelica.Fluid.Sensors.TemperatureTwoPort TReturn(redeclare package Medium=Medium)
-    "Return temperature sensor"
-    annotation(Placement(visible=true, transformation(origin={160,-100}, extent={{-10,-10},{10,10}}, rotation=0)));
+    annotation(Placement(visible=true, transformation(origin={196,-195}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // HYDRAULIC TOPOLOGY - OPTIMIZED DESIGN
-  // ═══════════════════════════════════════════════════════════════════
-  // Main tee: Splits flow between LIVING (priority) and CELLAR+ROOF (shared)
+  // ============================================================================
+  // HYDRAULIC SPLITTERS  (x=-105 and x=-80, y=70 between Cellar/Living)
+  // ============================================================================
   Modelica.Fluid.Fittings.TeeJunctionIdeal teeMain(redeclare package Medium=Medium)
-    "Main flow splitter: Living vs Cellar+Roof"
-    annotation(Placement(visible=true, transformation(origin={-110,100}, extent={{-10,-10},{10,10}}, rotation=0)));
+    "Main splitter: Living vs (Cellar+Roof)"
+    annotation(Placement(visible=true, transformation(origin={-105,70}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // Secondary tee: Splits remaining flow between cellar and roof
   Modelica.Fluid.Fittings.TeeJunctionIdeal teeCellarRoof(redeclare package Medium=Medium)
     "Secondary splitter: Cellar vs Roof"
-    annotation(Placement(visible=true, transformation(origin={-70,75}, extent={{-10,-10},{10,10}}, rotation=0)));
+    annotation(Placement(visible=true, transformation(origin={-80,70}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // Merge tee: Combines cellar and roof returns
+  // ============================================================================
+  // HYDRAULIC MERGERS  (x=158 and x=175, y=-70 between Living/Roof)
+  // ============================================================================
   Modelica.Fluid.Fittings.TeeJunctionIdeal teeMergeCellarRoof(redeclare package Medium=Medium)
-    "Merge cellar and roof returns"
-    annotation(Placement(visible=true, transformation(origin={90,75}, extent={{-10,10},{10,-10}}, rotation=0)));
+    "Merge Cellar + Roof returns"
+    annotation(Placement(visible=true, transformation(origin={158,-70}, extent={{10,-10},{-10,10}}, rotation=0)));
 
-  // Final merge: Combines all returns
   Modelica.Fluid.Fittings.TeeJunctionIdeal teeMergeMain(redeclare package Medium=Medium)
     "Merge all zone returns"
-    annotation(Placement(visible=true, transformation(origin={130,-100}, extent={{-10,10},{10,-10}}, rotation=0)));
+    annotation(Placement(visible=true, transformation(origin={175,-70}, extent={{10,-10},{-10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // CONTROL VALVES (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-  Modelica.Fluid.Valves.ValveLinear valve_roof(
+  // ============================================================================
+  // CONTROL VALVES  (x=-50, per-zone Y)
+  // ============================================================================
+  Modelica.Fluid.Valves.ValveLinear valve_cellar(
     redeclare package Medium=Medium,
-    dp_nominal=10000,
-    m_flow_nominal=0.04,
-    m_flow(start=0.008),
-    m_flow_small=0.001)
-    "Roof office control valve"
-    annotation(Placement(visible=true, transformation(origin={-50,25}, extent={{-10,-10},{10,10}}, rotation=0)));
+    dp_nominal=10000, m_flow_nominal=0.04, m_flow(start=0.008), m_flow_small=0.001)
+    annotation(Placement(visible=true, transformation(origin={-50,140}, extent={{-10,-10},{10,10}}, rotation=0)));
 
   Modelica.Fluid.Valves.ValveLinear valve_living(
     redeclare package Medium=Medium,
-    dp_nominal=10000,
-    m_flow_nominal=0.06,
-    m_flow(start=0.02),
-    m_flow_small=0.001)
-    "Living room control valve (PRIORITY)"
+    dp_nominal=10000, m_flow_nominal=0.06, m_flow(start=0.02), m_flow_small=0.001)
     annotation(Placement(visible=true, transformation(origin={-50,0}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  Modelica.Fluid.Valves.ValveLinear valve_cellar(
+  Modelica.Fluid.Valves.ValveLinear valve_roof(
     redeclare package Medium=Medium,
-    dp_nominal=10000,
-    m_flow_nominal=0.04,
-    m_flow(start=0.008),
-    m_flow_small=0.001)
-    "Cellar control valve"
-    annotation(Placement(visible=true, transformation(origin={-50,125}, extent={{-10,-10},{10,10}}, rotation=0)));
+    dp_nominal=10000, m_flow_nominal=0.04, m_flow(start=0.008), m_flow_small=0.001)
+    annotation(Placement(visible=true, transformation(origin={-50,-140}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // PI CONTROLLERS (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-  Modelica.Blocks.Continuous.LimPID PI_roof(
+  // ============================================================================
+  // PI CONTROLLERS  (x=-130, per-zone Y)
+  // ============================================================================
+  Modelica.Blocks.Continuous.LimPID PI_cellar(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
-    k=k_PI,
-    Ti=Ti_PI,
-    yMax=if roofHeat then 1.0 else yMin_roof,
-    yMin=yMin_roof)
-    "Roof office temperature controller"
-    annotation(Placement(visible=true, transformation(origin={-90,55}, extent={{-10,-10},{10,10}}, rotation=0)));
+    k=k_PI, Ti=Ti_PI,
+    yMax=if cellarHeat then 1.0 else 0.0,
+    yMin=if cellarHeat then yMin_cellar else 0.0)
+    annotation(Placement(visible=true, transformation(origin={-130,140}, extent={{-10,-10},{10,10}}, rotation=0)));
 
   Modelica.Blocks.Continuous.LimPID PI_living(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
-    k=k_PI,
-    Ti=Ti_PI,
-    yMax=1.0,
-    yMin=yMin_living)
-    "Living room temperature controller"
-    annotation(Placement(visible=true, transformation(origin={-96,22}, extent={{-10,-10},{10,10}}, rotation=0)));
+    k=k_PI, Ti=Ti_PI,
+    yMax=1.0, yMin=yMin_living)
+    annotation(Placement(visible=true, transformation(origin={-130,0}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  Modelica.Blocks.Continuous.LimPID PI_cellar(
+  Modelica.Blocks.Continuous.LimPID PI_roof(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
-    k=k_PI,
-    Ti=Ti_PI,
-    yMax=if cellarHeat then 1.0 else yMin_cellar,
-    yMin=yMin_cellar)
-    "Cellar temperature controller"
-    annotation(Placement(visible=true, transformation(origin={-90,150}, extent={{-10,-10},{10,10}}, rotation=0)));
+    k=k_PI, Ti=Ti_PI,
+    yMax=if roofHeat then 1.0 else 0.0,
+    yMin=if roofHeat then yMin_roof else 0.0)
+    annotation(Placement(visible=true, transformation(origin={-130,-140}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // HYDRONIC SUBSYSTEMS with RIGHT-SIZED radiators (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-  CoSES_Thermal_ProHMo_PHiL.HydronicSystem.SystemWithZoneAndHydronics_optimized roof_hydSys(
+  // ============================================================================
+  // SETPOINT CONSTANTS  (x=-175, per-zone Y)
+  // ============================================================================
+  Modelica.Blocks.Sources.Constant TRefConst_cellar(k=TRef_cellar)
+    annotation(Placement(visible=true, transformation(origin={-175,140}, extent={{-10,-10},{10,10}}, rotation=0)));
+
+  Modelica.Blocks.Sources.Constant TRefConst_living(k=TRef_living)
+    annotation(Placement(visible=true, transformation(origin={-177,-28},
+                                                                       extent={{-10,-10},{10,10}}, rotation=0)));
+
+  Modelica.Blocks.Sources.Constant TRefConst_roof(k=TRef_roof)
+    annotation(Placement(visible=true, transformation(origin={-173,-140}, extent={{-10,-10},{10,10}}, rotation=0)));
+
+  // ============================================================================
+  // HYDRONIC SUBSYSTEMS  (x=0, per-zone Y, extent ±20)
+  // ============================================================================
+  CoSES_Thermal_ProHMo_PHiL.HydronicSystem.SystemWithZoneAndHydronics_optimized cellar_hydSys(
     redeclare package Medium=Medium,
-    Q_flow_nominal=2000,  // Roof: 2500W (adequate)
-    T_a_nominal=343.15,
-    T_b_nominal=323.15,
-    TAir_nominal=293.15,
-    fraRad=0.35,
-    nEle=5,
-    T_start=323.15,
-    p_start=200000)
-    "Roof office hydronic system"
-    annotation(Placement(visible=true, transformation(origin={-2,41},extent={{-20,-20},{20,20}}, rotation=0)));
+    Q_flow_nominal=1500, T_a_nominal=343.15, T_b_nominal=323.15,
+    TAir_nominal=291.15, fraRad=0.35, nEle=5, T_start=323.15, p_start=200000)
+    annotation(Placement(visible=true, transformation(origin={0,140}, extent={{-20,-20},{20,20}}, rotation=0)));
 
   CoSES_Thermal_ProHMo_PHiL.HydronicSystem.SystemWithZoneAndHydronics_optimized living_hydSys(
     redeclare package Medium=Medium,
-    Q_flow_nominal=3500,  // Living: 3500W (priority zone)
-    T_a_nominal=343.15,
-    T_b_nominal=323.15,
-    TAir_nominal=293.15,
-    fraRad=0.35,
-    nEle=5,
-    T_start=323.15,
-    p_start=200000)
-    "Living room hydronic system"
-    annotation(Placement(visible=true, transformation(origin={0,-12},extent={{-20,-20},{20,20}}, rotation=0)));
+    Q_flow_nominal=3500, T_a_nominal=343.15, T_b_nominal=323.15,
+    TAir_nominal=293.15, fraRad=0.35, nEle=5, T_start=323.15, p_start=200000)
+    annotation(Placement(visible=true, transformation(origin={0,0}, extent={{-20,-20},{20,20}}, rotation=0)));
 
-  CoSES_Thermal_ProHMo_PHiL.HydronicSystem.SystemWithZoneAndHydronics_optimized cellar_hydSys(
+  CoSES_Thermal_ProHMo_PHiL.HydronicSystem.SystemWithZoneAndHydronics_optimized roof_hydSys(
     redeclare package Medium=Medium,
-    Q_flow_nominal=1500,  // Reduced from 2500 W Cellar: 2500W (REDUCED from 4000W!)
-    T_a_nominal=343.15,
-    T_b_nominal=323.15,
-    TAir_nominal=291.15,
-    fraRad=0.35,
-    nEle=5,
-    T_start=323.15,
-    p_start=200000)
-    "Cellar hydronic system"
-    annotation(Placement(visible=true, transformation(origin={0,135}, extent={{-20,-20},{20,20}}, rotation=0)));
+    Q_flow_nominal=2000, T_a_nominal=343.15, T_b_nominal=323.15,
+    TAir_nominal=293.15, fraRad=0.35, nEle=5, T_start=323.15, p_start=200000)
+    annotation(Placement(visible=true, transformation(origin={0,-140}, extent={{-20,-20},{20,20}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // BUILDING ZONES - Using BuildingSystem library (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-  BuildingSystem.Building.HeatedZone roof_zone(
-    ZoneIndex=3,
-    NumberZones=3,
-    AZone=AZone_roof,
-    hZone=hZone_roof,
-    TZoneInit=TZoneInit_roof,
-    infiltrationRate=0.20,  // Low-moderate infiltration
-    occupancyLoad=100,
-    applianceLoad=50)
-    "Roof office thermal zone"
-    annotation(Placement(visible=true, transformation(origin={72,-59},extent={{-20,-20},{20,20}}, rotation=0)));
+  // ============================================================================
+  // BUILDING ZONES  (x=110, per-zone Y, extent ±20)
+  // ============================================================================
+  BuildingSystem.Building.HeatedZone cellar_zone(
+    ZoneIndex=1, NumberZones=3, AZone=AZone_cellar, hZone=hZone_cellar,
+    TZoneInit=TZoneInit_cellar, infiltrationRate=0.15, occupancyLoad=50, applianceLoad=50)
+    annotation(Placement(visible=true, transformation(origin={110,140}, extent={{-20,-20},{20,20}}, rotation=0)));
 
   BuildingSystem.Building.HeatedZone living_zone(
-    ZoneIndex=2,
-    NumberZones=3,
-    AZone=AZone_living,
-    hZone=hZone_living,
-    TZoneInit=TZoneInit_living,
-    infiltrationRate=0.30,  // Moderate infiltration
-    occupancyLoad=200,
-    applianceLoad=150)
-    "Living room thermal zone"
-    annotation(Placement(visible=true, transformation(origin={70,32}, extent={{-20,-20},{20,20}}, rotation=0)));
+    ZoneIndex=2, NumberZones=3, AZone=AZone_living, hZone=hZone_living,
+    TZoneInit=TZoneInit_living, infiltrationRate=0.30, occupancyLoad=200, applianceLoad=150)
+    annotation(Placement(visible=true, transformation(origin={110,0}, extent={{-20,-20},{20,20}}, rotation=0)));
 
-  BuildingSystem.Building.HeatedZone cellar_zone(
-    ZoneIndex=1,
-    NumberZones=3,
-    AZone=AZone_cellar,
-    hZone=hZone_cellar,
-    TZoneInit=TZoneInit_cellar,
-    infiltrationRate=0.15,  // Low infiltration (underground)
-    occupancyLoad=50,
-    applianceLoad=50)
-    "Cellar thermal zone"
-    annotation(Placement(visible=true, transformation(origin={70,135}, extent={{-20,-20},{20,20}}, rotation=0)));
+  BuildingSystem.Building.HeatedZone roof_zone(
+    ZoneIndex=3, NumberZones=3, AZone=AZone_roof, hZone=hZone_roof,
+    TZoneInit=TZoneInit_roof, infiltrationRate=0.20, occupancyLoad=100, applianceLoad=50)
+    annotation(Placement(visible=true, transformation(origin={110,-140}, extent={{-20,-20},{20,20}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // SETPOINT CONSTANTS (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-  Modelica.Blocks.Sources.Constant TRefConst_roof(k=TRef_roof)
-    "Roof temperature setpoint"
-    annotation(Placement(visible=true, transformation(origin={-152,1},  extent={{-10,-10},{10,10}}, rotation=0)));
-
-  Modelica.Blocks.Sources.Constant TRefConst_living(k=TRef_living)
-    "Living temperature setpoint"
-    annotation(Placement(visible=true, transformation(origin={-158,-42},extent={{-10,-10},{10,10}}, rotation=0)));
-
-  Modelica.Blocks.Sources.Constant TRefConst_cellar(k=TRef_cellar)
-    "Cellar temperature setpoint"
-    annotation(Placement(visible=true, transformation(origin={-160,150}, extent={{-10,-10},{10,10}}, rotation=0)));
-
-  // Window shading (disabled for now) - Roof → Living → Cellar
-  Modelica.Blocks.Sources.Constant WindowShadingConst_roof[3](each k=0)
-    annotation(Placement(visible=true, transformation(origin={50,55}, extent={{-10,-10},{10,10}}, rotation=0)));
-  Modelica.Blocks.Sources.Constant WindowShadingConst_living[3](each k=0)
-    annotation(Placement(visible=true, transformation(origin={50,30}, extent={{-10,-10},{10,10}}, rotation=0)));
+  // ============================================================================
+  // WINDOW SHADING & SOLAR RADIATION CONSTANTS  (x=47, per-zone Y ±14)
+  // ============================================================================
   Modelica.Blocks.Sources.Constant WindowShadingConst_cellar[3](each k=0)
-    annotation(Placement(visible=true, transformation(origin={50,150}, extent={{-10,-10},{10,10}}, rotation=0)));
-
-  // Solar radiation (disabled for now) - Roof → Living → Cellar
-  Modelica.Blocks.Sources.Constant Q_radiation_roof(k=0)
-    annotation(Placement(visible=true, transformation(origin={30,65}, extent={{-10,-10},{10,10}}, rotation=0)));
-  Modelica.Blocks.Sources.Constant Q_radiation_living(k=0)
-    annotation(Placement(visible=true, transformation(origin={30,40}, extent={{-10,-10},{10,10}}, rotation=0)));
+    annotation(Placement(visible=true, transformation(origin={47,154}, extent={{-8,-8},{8,8}}, rotation=0)));
   Modelica.Blocks.Sources.Constant Q_radiation_cellar(k=0)
-    annotation(Placement(visible=true, transformation(origin={30,160}, extent={{-10,-10},{10,10}}, rotation=0)));
+    annotation(Placement(visible=true, transformation(origin={47,126}, extent={{-8,-8},{8,8}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // FLOW RATE APPROXIMATION (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-  Modelica.Blocks.Math.Add3 qvSum
-    "Sum of all zone flow rates"
-    annotation(Placement(visible=true, transformation(origin={170,-100}, extent={{-10,-10},{10,10}}, rotation=0)));
+  Modelica.Blocks.Sources.Constant WindowShadingConst_living[3](each k=0)
+    annotation(Placement(visible=true, transformation(origin={47,14}, extent={{-8,-8},{8,8}}, rotation=0)));
+  Modelica.Blocks.Sources.Constant Q_radiation_living(k=0)
+    annotation(Placement(visible=true, transformation(origin={47,-14}, extent={{-8,-8},{8,8}}, rotation=0)));
 
-  Modelica.Blocks.Math.Gain qv_roof_approx(k=0.001)
-    "Roof flow approximation"
-    annotation(Placement(visible=true, transformation(origin={130,55}, extent={{-10,-10},{10,10}}, rotation=0)));
+  Modelica.Blocks.Sources.Constant WindowShadingConst_roof[3](each k=0)
+    annotation(Placement(visible=true, transformation(origin={47,-126}, extent={{-8,-8},{8,8}}, rotation=0)));
+  Modelica.Blocks.Sources.Constant Q_radiation_roof(k=0)
+    annotation(Placement(visible=true, transformation(origin={47,-154}, extent={{-8,-8},{8,8}}, rotation=0)));
+
+  // ============================================================================
+  // FLOW RATE APPROXIMATION  (x=162, per-zone Y)
+  // ============================================================================
+  Modelica.Blocks.Math.Gain qv_cellar_approx(k=0.001)
+    annotation(Placement(visible=true, transformation(origin={162,140}, extent={{-8,-8},{8,8}}, rotation=0)));
 
   Modelica.Blocks.Math.Gain qv_living_approx(k=0.001)
-    "Living flow approximation"
-    annotation(Placement(visible=true, transformation(origin={130,30}, extent={{-10,-10},{10,10}}, rotation=0)));
+    annotation(Placement(visible=true, transformation(origin={162,0}, extent={{-8,-8},{8,8}}, rotation=0)));
 
-  Modelica.Blocks.Math.Gain qv_cellar_approx(k=0.001)
-    "Cellar flow approximation"
-    annotation(Placement(visible=true, transformation(origin={130,150}, extent={{-10,-10},{10,10}}, rotation=0)));
+  Modelica.Blocks.Math.Gain qv_roof_approx(k=0.001)
+    annotation(Placement(visible=true, transformation(origin={162,-140}, extent={{-8,-8},{8,8}}, rotation=0)));
+
+  Modelica.Blocks.Math.Add3 qvSum
+    annotation(Placement(visible=true, transformation(origin={205,-70}, extent={{-10,-10},{10,10}}, rotation=0)));
 
 equation
-  // ═══════════════════════════════════════════════════════════════════
-  // HYDRAULIC CONNECTIONS - OPTIMIZED TOPOLOGY
-  // ═══════════════════════════════════════════════════════════════════
-
-  // Supply path: Port_a → Sensors → Main tee
+  // ============================================================================
+  // HYDRAULIC SUPPLY PATH
+  // port_a -> qvMedium -> TMedium -> teeMain
+  // ============================================================================
   connect(port_a, qvMedium.port_a)
-    annotation(Line(points={{-200,60},{-178,60}}, color={0,127,255}, thickness=0.5));
+    annotation(Line(points={{-222,10},{-195,10}}, color={0,127,255}, thickness=0.5));
   connect(qvMedium.port_b, TMedium.port_a)
-    annotation(Line(points={{-158,60},{-146,60}}, color={0,127,255}, thickness=0.5));
+    annotation(Line(points={{-175,10},{-165,10}}, color={0,127,255}, thickness=0.5));
   connect(TMedium.port_b, teeMain.port_1)
-    annotation(Line(points={{-126,60},{-118,60},{-118,84},{-126,84},{-126,100},{-120,100}}, color={0,127,255}, thickness=0.5));
+    annotation(Line(points={{-145,10},{-130,10},{-130,70},{-115,70}}, color={0,127,255}, thickness=0.5));
 
-  // ⭐ LIVING PRIORITY: Direct connection from main tee
+  // ============================================================================
+  // SUPPLY SPLITTING:  teeMain -> valve_living (direct priority)
+  //                    teeMain -> teeCellarRoof -> valve_cellar / valve_roof
+  // ============================================================================
   connect(teeMain.port_2, valve_living.port_a)
-    annotation(Line(points={{-100,100},{-54,100},{-54,42},{-66,42},{-66,0},{-60,0}}, color={0,127,255}, thickness=0.5));
-  connect(valve_living.port_b, living_hydSys.port_a)
-    annotation(Line(points={{-40,0},{-30,0},{-30,-12},{-20,-12}}, color={0,127,255}, thickness=0.5));
+    annotation(Line(points={{-95,70},{-70,70},{-70,0},{-60,0}}, color={0,127,255}, thickness=0.5));
 
-  // ⭐ CELLAR+ROOF SHARED: Secondary branch from main tee
   connect(teeMain.port_3, teeCellarRoof.port_1)
-    annotation(Line(points={{-110,110},{-110,114},{-86,114},{-86,75},{-80,75}}, color={0,127,255}));
+    annotation(Line(points={{-105,80},{-105,90},{-90,90},{-90,70},{-90,70}}, color={0,127,255}));
+
   connect(teeCellarRoof.port_2, valve_cellar.port_a)
-    annotation(Line(points={{-60,75},{-60,125},{-60,125}}, color={0,127,255}));
+    annotation(Line(points={{-70,70},{-70,140},{-60,140}}, color={0,127,255}));
+
   connect(teeCellarRoof.port_3, valve_roof.port_a)
-    annotation(Line(points={{-70,85},{-70,25},{-60,25}}, color={0,127,255}));
+    annotation(Line(points={{-80,80},{-80,-140},{-60,-140}}, color={0,127,255}));
+
+  // ============================================================================
+  // VALVE -> HYDRONIC SUBSYSTEM  (straight horizontal connections)
+  // ============================================================================
   connect(valve_cellar.port_b, cellar_hydSys.port_a)
-    annotation(Line(points={{-40,125},{-30,125},{-30,135},{-20,135}}, color={0,127,255}));
+    annotation(Line(points={{-40,140},{-20,140}}, color={0,127,255}, thickness=0.5));
+  connect(valve_living.port_b, living_hydSys.port_a)
+    annotation(Line(points={{-40,0},{-20,0}}, color={0,127,255}, thickness=0.5));
   connect(valve_roof.port_b, roof_hydSys.port_a)
-    annotation(Line(points={{-40,25},{-30,25},{-30,41},{-22,41}}, color={0,127,255}));
+    annotation(Line(points={{-40,-140},{-20,-140}}, color={0,127,255}, thickness=0.5));
 
-  // Return path merging
+  // ============================================================================
+  // RETURN PATH MERGING
+  // cellar_hydSys + roof_hydSys -> teeMergeCellarRoof
+  // teeMergeCellarRoof + living_hydSys -> teeMergeMain -> TReturn -> port_b
+  // ============================================================================
   connect(cellar_hydSys.port_b, teeMergeCellarRoof.port_2)
-    annotation(Line(points={{20,135},{50,135},{50,75},{100,75}},color={0,127,255}));
+    annotation(Line(points={{20,140},{148,140},{148,-70}}, color={0,127,255}));
   connect(roof_hydSys.port_b, teeMergeCellarRoof.port_3)
-    annotation(Line(points={{18,41},{50,41},{50,65},{90,65}}, color={0,127,255}));
+    annotation(Line(points={{20,-140},{158,-140},{158,-60}}, color={0,127,255}));
   connect(teeMergeCellarRoof.port_1, teeMergeMain.port_3)
-    annotation(Line(points={{80,75},{130,75},{130,-110}}, color={0,127,255}));
+    annotation(Line(points={{168,-70},{175,-70},{175,-60}}, color={0,127,255}));
   connect(living_hydSys.port_b, teeMergeMain.port_2)
-    annotation(Line(points={{20,-12},{40,-12},{40,-118},{140,-118},{140,-100}}, color={0,127,255}));
+    annotation(Line(points={{20,0},{165,0},{165,-70}}, color={0,127,255}));
   connect(teeMergeMain.port_1, TReturn.port_a)
-    annotation(Line(points={{120,-100},{150,-100}}, color={0,127,255}, thickness=0.5));
+    annotation(Line(points={{185,-70},{185,-195},{186,-195}}, color={0,127,255}, thickness=0.5));
   connect(TReturn.port_b, port_b)
-    annotation(Line(points={{170,-100},{170,-120},{-200,-120},{-200,-62}}, color={0,127,255}, thickness=0.5));
+    annotation(Line(points={{206,-195},{206,-210},{-222,-210},{-222,-195}}, color={0,127,255}, thickness=0.5));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // ZONE THERMAL CONNECTIONS (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-  connect(roof_hydSys.port_zone, roof_zone.heatPort)
-    annotation(Line(points={{-2,61},{-2,64},{-26,64},{-26,54},{-72,54},{-72,-46},{42,-46},{42,-50.6},{50.8,-50.6}}, color={191,0,0}));
-  connect(living_hydSys.port_zone, living_zone.heatPort)
-    annotation(Line(points={{0,8},{-26,8},{-26,28},{-32,28},{-32,84},{48.8,84},{48.8,40.4}}, color={191,0,0}));
+  // ============================================================================
+  // THERMAL: hydSys -> zone heatPort  (via short diagonal stub)
+  // ============================================================================
   connect(cellar_hydSys.port_zone, cellar_zone.heatPort)
-    annotation(Line(points={{0,154},{0,160},{50,160},{50,143.4},{48.8,143.4}}, color={191,0,0}));
+    annotation(Line(points={{0,160},{0,168},{80,168},{80,148.4},{88.8,148.4}}, color={191,0,0}));
+  connect(living_hydSys.port_zone, living_zone.heatPort)
+    annotation(Line(points={{0,20},{0,28},{80,28},{80,8.4},{88.8,8.4}}, color={191,0,0}));
+  connect(roof_hydSys.port_zone, roof_zone.heatPort)
+    annotation(Line(points={{0,-120},{0,-112},{80,-112},{80,-131.6},{88.8,-131.6}}, color={191,0,0}));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // CONTROL CONNECTIONS - PI Controllers (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-
-  // Roof control loop
-  connect(TRefConst_roof.y, PI_roof.u_s)
-    annotation(Line(points={{-141,1},{-114,1},{-114,55},{-102,55}}, color={0,0,127}));
-  connect(roof_zone.TZone, PI_roof.u_m)
-    annotation(Line(points={{64,-79.4},{64,-88},{44,-88},{44,-72},{-100,-72},{-100,-36},{-80,-36},{-80,43},{-90,43}}, color={0,0,127}));
-  connect(PI_roof.y, valve_roof.opening)
-    annotation(Line(points={{-79,55},{-70,55},{-70,40},{-50,40},{-50,33}}, color={0,0,127}));
-  connect(TRefConst_roof.y, roof_zone.TZoneRef)
-    annotation(Line(points={{-141,1},{-114,1},{-114,-94},{100,-94},{100,-76},{106,-76},{106,-32},{91.6,-32},{91.6,-51}}, color={0,0,127}));
-
-  // Living control loop
-  connect(TRefConst_living.y, PI_living.u_s)
-    annotation(Line(points={{-147,-42},{-142,-42},{-142,-16},{-118,-16},{-118,22},{-108,22}}, color={0,0,127}));
-  connect(living_zone.TZone, PI_living.u_m)
-    annotation(Line(points={{62,11.6},{62,-24},{30,-24},{30,-38},{-32,-38},{-32,-56},{-102,-56},{-102,2},{-96,2},{-96,10}}, color={0,0,127}));
-  connect(PI_living.y, valve_living.opening)
-    annotation(Line(points={{-85,22},{-70,22},{-70,8},{-50,8}}, color={0,0,127}));
-  connect(TRefConst_living.y, living_zone.TZoneRef)
-    annotation(Line(points={{-147,-42},{-142,-42},{-142,-16},{-118,-16},{-118,58},{-110,58},{-110,84},{-88,84},{-88,92},{70,92},{70,58},{89.6,58},{89.6,40}}, color={0,0,127}));
-
-  // Cellar control loop
+  // ============================================================================
+  // CONTROL LOOPS - CELLAR
+  // TRefConst_cellar -> PI_cellar.u_s
+  // cellar_zone.TZone -> PI_cellar.u_m
+  // PI_cellar.y -> valve_cellar.opening
+  // TRefConst_cellar -> cellar_zone.TZoneRef
+  // ============================================================================
   connect(TRefConst_cellar.y, PI_cellar.u_s)
-    annotation(Line(points={{-149,150},{-102,150}}, color={0,0,127}));
+    annotation(Line(points={{-164,140},{-142,140}}, color={0,0,127}));
   connect(cellar_zone.TZone, PI_cellar.u_m)
-    annotation(Line(points={{62,114.6},{110,114.6},{110,130},{-90,130},{-90,138}}, color={0,0,127}));
+    annotation(Line(points={{98,120},{98,110},{-130,110},{-130,128}}, color={0,0,127}));
   connect(PI_cellar.y, valve_cellar.opening)
-    annotation(Line(points={{-79,150},{-70,150},{-70,140},{-50,140},{-50,133}}, color={0,0,127}));
+    annotation(Line(points={{-119,140},{-100,140},{-100,152},{-50,152},{-50,148}}, color={0,0,127}));
   connect(TRefConst_cellar.y, cellar_zone.TZoneRef)
-    annotation(Line(points={{-149,150},{-140,150},{-140,180},{100,180},{100,143},{89.6,143}}, color={0,0,127}));
+    annotation(Line(points={{-164,140},{-120,140},{-120,178},{130,178},{130,148},{128,148}}, color={0,0,127}));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // ZONE INPUT CONNECTIONS (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // CONTROL LOOPS - LIVING
+  // ============================================================================
+  connect(TRefConst_living.y, PI_living.u_s)
+    annotation(Line(points={{-166,-28},{-142,-28},{-142,0}},
+                                                color={0,0,127}));
+  connect(living_zone.TZone, PI_living.u_m)
+    annotation(Line(points={{98,-20},{98,-30},{-130,-30},{-130,-12}}, color={0,0,127}));
+  connect(PI_living.y, valve_living.opening)
+    annotation(Line(points={{-119,0},{-100,0},{-100,12},{-50,12},{-50,8}}, color={0,0,127}));
+  connect(TRefConst_living.y, living_zone.TZoneRef)
+    annotation(Line(points={{-166,-28},{-120,-28},{-120,40},{130,40},{130,8},{128,
+          8}},                                                                     color={0,0,127}));
 
-  // Window shading
-  connect(WindowShadingConst_roof.y, roof_zone.WindowShading)
-    annotation(Line(points={{61,55},{66,55},{66,94},{146,94},{146,-46},{116,-46},{116,-82},{98,-82},{98,-90},{42,-90},{42,-78.8},{51.4,-78.8}}, color={0,0,127}));
-  connect(WindowShadingConst_living.y, living_zone.WindowShading)
-    annotation(Line(points={{61,30},{61,4},{49.4,4},{49.4,12.2}}, color={0,0,127}));
+  // ============================================================================
+  // CONTROL LOOPS - ROOF
+  // ============================================================================
+  connect(TRefConst_roof.y, PI_roof.u_s)
+    annotation(Line(points={{-162,-140},{-142,-140}}, color={0,0,127}));
+  connect(roof_zone.TZone, PI_roof.u_m)
+    annotation(Line(points={{98,-160},{98,-170},{-130,-170},{-130,-152}}, color={0,0,127}));
+  connect(PI_roof.y, valve_roof.opening)
+    annotation(Line(points={{-119,-140},{-100,-140},{-100,-128},{-50,-128},{-50,-132}}, color={0,0,127}));
+  connect(TRefConst_roof.y, roof_zone.TZoneRef)
+    annotation(Line(points={{-162,-140},{-120,-140},{-120,-100},{130,-100},{130,
+          -132},{128,-132}},                                                                       color={0,0,127}));
+
+  // ============================================================================
+  // ZONE INPUTS - WINDOW SHADING & SOLAR RADIATION
+  // ============================================================================
   connect(WindowShadingConst_cellar.y, cellar_zone.WindowShading)
-    annotation(Line(points={{61,150},{49.4,150},{49.4,115.2}}, color={0,0,127}));
-
-  // Solar radiation
-  connect(Q_radiation_roof.y, roof_zone.Q_radiation_W)
-    annotation(Line(points={{41,65},{41,82},{14,82},{14,66},{-52,66},{-52,58},{-74,58},{-74,-38},{-98,-38},{-98,-53},{28,-53}}, color={0,0,127}));
-  connect(Q_radiation_living.y, living_zone.Q_radiation_W)
-    annotation(Line(points={{41,40},{41,14},{30,14},{30,24},{26,24},{26,38}}, color={0,0,127}));
+    annotation(Line(points={{55.8,154},{80,154},{80,119.2},{88.2,119.2}}, color={0,0,127}));
   connect(Q_radiation_cellar.y, cellar_zone.Q_radiation_W)
-    annotation(Line(points={{41,160},{50,160},{50,141},{26,141}}, color={0,0,127}));
+    annotation(Line(points={{55.8,126},{84,126},{84,129.4},{87.4,129.4}}, color={0,0,127}));
 
-  // Occupancy
-  connect(nPersons_roof, roof_zone.nPersons)
-    annotation(Line(points={{-220,118},{25,118},{25,-47},{105.2,-47}}, color={0,0,127}));
-  connect(nPersons_living, living_zone.nPersons)
-    annotation(Line(points={{-220,140},{-210,140},{-210,130},{30,130},{30,44},{103.2,44}}, color={0,0,127}));
+  connect(WindowShadingConst_living.y, living_zone.WindowShading)
+    annotation(Line(points={{55.8,14},{80,14},{80,-20.8},{88.2,-20.8}}, color={0,0,127}));
+  connect(Q_radiation_living.y, living_zone.Q_radiation_W)
+    annotation(Line(points={{55.8,-14},{84,-14},{84,-10.6},{87.4,-10.6}}, color={0,0,127}));
+
+  connect(WindowShadingConst_roof.y, roof_zone.WindowShading)
+    annotation(Line(points={{55.8,-126},{80,-126},{80,-160.8},{88.2,-160.8}}, color={0,0,127}));
+  connect(Q_radiation_roof.y, roof_zone.Q_radiation_W)
+    annotation(Line(points={{55.8,-154},{84,-154},{84,-150.6},{87.4,-150.6}}, color={0,0,127}));
+
+  // ============================================================================
+  // ZONE INPUTS - OCCUPANCY  (routed along top)
+  // ============================================================================
   connect(nPersons_cellar, cellar_zone.nPersons)
-    annotation(Line(points={{-220,180},{-200,180},{-200,190},{40,190},{40,147},{103.2,147}}, color={0,0,127}));
+    annotation(Line(points={{-222,185},{130,185},{130,152.4},{132.8,152.4}},
+                                                                           color={0,0,127}));
+  connect(nPersons_living, living_zone.nPersons)
+    annotation(Line(points={{-222,165},{-10,165},{-10,54},{132,54},{132,12.4},{
+          132.8,12.4}},                                                                    color={0,0,127}));
+  connect(nPersons_roof, roof_zone.nPersons)
+    annotation(Line(points={{-222,145},{-12,145},{-12,-46},{136,-46},{136,
+          -127.6},{132.8,-127.6}},                                                               color={0,0,127}));
 
-  // Appliance loads
-  connect(P_appliances_roof_W, roof_zone.P_appliances_W)
-    annotation(Line(points={{230,100},{194,100},{194,-14},{96,-14},{96,-22},{38,-22},{38,-16},{28,-16},{28,-45}}, color={0,0,127}));
-  connect(P_appliances_living_W, living_zone.P_appliances_W)
-    annotation(Line(points={{230,140},{188,140},{188,2},{30,2},{30,12},{28,12},{28,26},{26,26},{26,46}}, color={0,0,127}));
+  // ============================================================================
+  // ZONE INPUTS - APPLIANCE LOADS  (from right side)
+  // ============================================================================
   connect(P_appliances_cellar_W, cellar_zone.P_appliances_W)
-    annotation(Line(points={{230,180},{220,180},{220,149},{26,149}}, color={0,0,127}));
+    annotation(Line(points={{250,140},{220,140},{220,152.8},{87.2,152.8}}, color={0,0,127}));
+  connect(P_appliances_living_W, living_zone.P_appliances_W)
+    annotation(Line(points={{250,0},{220,0},{220,12.8},{87.2,12.8}}, color={0,0,127}));
+  connect(P_appliances_roof_W, roof_zone.P_appliances_W)
+    annotation(Line(points={{250,-140},{220,-140},{220,-127.2},{87.2,-127.2}}, color={0,0,127}));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // OUTPUT CONNECTIONS (Roof → Living → Cellar)
-  // ═══════════════════════════════════════════════════════════════════
-  connect(roof_zone.TZone, TZone_roof)
-    annotation(Line(points={{64,-79.4},{64,-88},{114,-88},{114,-84},{210,-84},{210,-60}}, color={0,0,127}));
-  connect(living_zone.TZone, TZone_living)
-    annotation(Line(points={{62,11.6},{62,4},{190,4},{190,16},{210,16},{210,40}}, color={0,0,127}));
+  // ============================================================================
+  // ZONE INPUTS - SOLAR RADIATION  (routed along bottom)
+  // ============================================================================
+  connect(solRad_roof, roof_zone.solRadIn)
+    annotation(Line(points={{-222,-145},{-14,-145},{-14,-162},{110,-162},{110,-161}}, color={0,0,127}));
+  connect(solRad_living, living_zone.solRadIn)
+    annotation(Line(points={{-222,-165},{-16,-165},{-16,-40},{112,-40},{112,-21}}, color={0,0,127}));
+  connect(solRad_cellar, cellar_zone.solRadIn)
+    annotation(Line(points={{-222,-185},{-18,-185},{-18,100},{110,100},{110,118}}, color={0,0,127}));
+
+  // ============================================================================
+  // OUTPUTS - ZONE TEMPERATURES & VALVE POSITIONS
+  // ============================================================================
   connect(cellar_zone.TZone, TZone_cellar)
-    annotation(Line(points={{62,114.6},{210,114.6},{210,140}}, color={0,0,127}));
-
-  connect(PI_roof.y, valve_roof_opening)
-    annotation(Line(points={{-79,55},{-70,55},{-70,70},{180,70},{180,-140},{210,-140}}, color={0,0,127}));
-  connect(PI_living.y, valve_living_opening)
-    annotation(Line(points={{-85,22},{-70,22},{-70,-44},{228,-44},{228,0},{210,0}}, color={0,0,127}));
+    annotation(Line(points={{98,120},{218,120},{218,140},{240,140}}, color={0,0,127}));
   connect(PI_cellar.y, valve_cellar_opening)
-    annotation(Line(points={{-79,150},{-70,150},{-70,170},{190,170},{190,100},{210,100}}, color={0,0,127}));
+    annotation(Line(points={{-119,140},{-110,140},{-110,190},{230,190},{230,115},{240,115}}, color={0,0,127}));
 
-  // Flow rate approximation
-  connect(PI_roof.y, qv_roof_approx.u)
-    annotation(Line(points={{-79,55},{118,55}}, color={0,0,127}));
-  connect(PI_living.y, qv_living_approx.u)
-    annotation(Line(points={{-85,22},{20,22},{20,30},{118,30}}, color={0,0,127}));
+  connect(living_zone.TZone, TZone_living)
+    annotation(Line(points={{98,-20},{218,-20},{218,0},{240,0}}, color={0,0,127}));
+  connect(PI_living.y, valve_living_opening)
+    annotation(Line(points={{-119,0},{-112,0},{-112,-50},{230,-50},{230,-25},{240,-25}}, color={0,0,127}));
+
+  connect(roof_zone.TZone, TZone_roof)
+    annotation(Line(points={{98,-160},{218,-160},{218,-140},{240,-140}}, color={0,0,127}));
+  connect(PI_roof.y, valve_roof_opening)
+    annotation(Line(points={{-119,-140},{-112,-140},{-112,-200},{230,-200},{230,-165},{240,-165}}, color={0,0,127}));
+
+  // ============================================================================
+  // FLOW RATE APPROXIMATION
+  // ============================================================================
   connect(PI_cellar.y, qv_cellar_approx.u)
-    annotation(Line(points={{-79,150},{118,150}}, color={0,0,127}));
+    annotation(Line(points={{-119,140},{152,140}}, color={0,0,127}));
+  connect(PI_living.y, qv_living_approx.u)
+    annotation(Line(points={{-119,0},{152,0}}, color={0,0,127}));
+  connect(PI_roof.y, qv_roof_approx.u)
+    annotation(Line(points={{-119,-140},{152,-140}}, color={0,0,127}));
 
-  connect(qv_roof_approx.y, qvSum.u3)
-    annotation(Line(points={{141,55},{150,55},{150,-108},{158,-108}}, color={0,0,127}));
-  connect(qv_living_approx.y, qvSum.u2)
-    annotation(Line(points={{141,30},{155,30},{155,-100},{158,-100}}, color={0,0,127}));
   connect(qv_cellar_approx.y, qvSum.u1)
-    annotation(Line(points={{141,150},{150,150},{150,-92},{158,-92}}, color={0,0,127}));
-
+    annotation(Line(points={{170.8,140},{190,140},{190,-62},{193,-62}}, color={0,0,127}));
+  connect(qv_living_approx.y, qvSum.u2)
+    annotation(Line(points={{170.8,0},{190,0},{190,-70},{193,-70}}, color={0,0,127}));
+  connect(qv_roof_approx.y, qvSum.u3)
+    annotation(Line(points={{170.8,-140},{190,-140},{190,-78},{193,-78}}, color={0,0,127}));
   connect(qvSum.y, qvRef)
-    annotation(Line(points={{181,-100},{210,-100}}, color={0,0,127}));
+    annotation(Line(points={{216,-70},{230,-70},{230,-200},{240,-200}}, color={0,0,127}));
 
-  annotation(
-    Icon(graphics={
-      Rectangle(extent={{-100,-100},{100,100}}, lineColor={0,0,0}, fillColor={255,255,255}, fillPattern=FillPattern.Solid),
-      Text(extent={{-80,90},{80,70}}, textString="REORGANIZED", lineColor={255,128,0}),
-      Text(extent={{-80,60},{80,40}}, textString="Roof→Living→Cellar", lineColor={0,0,0}),
-      Rectangle(extent={{-80,30},{-40,-30}}, lineColor={0,0,255}, fillColor={200,200,255}, fillPattern=FillPattern.Solid),
-      Text(extent={{-75,25},{-45,15}}, textString="Roof", lineColor={0,0,0}),
-      Rectangle(extent={{-30,30},{10,-30}}, lineColor={0,128,0}, fillColor={200,255,200}, fillPattern=FillPattern.Solid),
-      Text(extent={{-25,25},{5,15}}, textString="Living", lineColor={0,0,0}),
-      Rectangle(extent={{20,30},{60,-30}}, lineColor={255,0,0}, fillColor={255,200,200}, fillPattern=FillPattern.Solid),
-      Text(extent={{25,25},{55,15}}, textString="Cellar", lineColor={0,0,0}),
-      Line(points={{-90,0},{-80,0}}, color={0,127,255}, thickness=1),
-      Line(points={{60,0},{90,0}}, color={0,127,255}, thickness=1),
-      Text(extent={{-100,-70},{100,-90}}, textString="Living Priority", lineColor={255,0,0})}),
-    Documentation(info="<html>
-<h4>ThreeZoneBuilding_optimized - REORGANIZED</h4>
+annotation(
+  Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
+    graphics={
+      Rectangle(extent={{-100,100},{100,-100}}, lineColor={0,0,0},
+        fillColor={255,255,255}, fillPattern=FillPattern.Solid),
+      Polygon(points={{-70,60},{0,85},{70,60},{70,40},{-70,40},{-70,60}},
+        lineColor={0,0,255}, fillColor={200,220,255}, fillPattern=FillPattern.Solid, lineThickness=1),
+      Rectangle(extent={{-70,40},{70,0}}, lineColor={0,128,0},
+        fillColor={220,255,220}, fillPattern=FillPattern.Solid, lineThickness=1),
+      Rectangle(extent={{-70,0},{70,-40}}, lineColor={139,69,19},
+        fillColor={255,235,205}, fillPattern=FillPattern.Solid, lineThickness=1),
+      Line(points={{-90,-40},{90,-40}}, color={100,100,100}, thickness=2),
+      Text(extent={{-60,72},{60,62}}, textString="ROOF", textColor={0,0,200},
+        textStyle={TextStyle.Bold}, fontSize=10),
+      Text(extent={{-60,55},{60,45}}, textString="Office/Attic", textColor={0,0,150}, fontSize=7),
+      Text(extent={{-60,32},{60,22}}, textString="LIVING", textColor={0,128,0},
+        textStyle={TextStyle.Bold}, fontSize=10),
+      Text(extent={{-60,15},{60,5}}, textString="Main Floor", textColor={0,100,0}, fontSize=7),
+      Text(extent={{-60,-8},{60,-18}}, textString="CELLAR", textColor={139,69,19},
+        textStyle={TextStyle.Bold}, fontSize=10),
+      Text(extent={{-60,-25},{60,-35}}, textString="Basement", textColor={100,50,0}, fontSize=7),
+      Text(extent={{-90,100},{90,85}}, textString="%name", textColor={0,0,0}, textStyle={TextStyle.Bold}),
+      Text(extent={{-90,-50},{90,-65}}, textString="Living Priority", textColor={0,128,0},
+        textStyle={TextStyle.Bold}, fontSize=9)}),
 
-<p><b>⭐ Components ordered: Roof → Living → Cellar</b></p>
-<p><b>⚠️ NO PARAMETER CHANGES - Only reorganization for clarity</b></p>
+  Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-230,-215},{260,215}})),
 
-<h5>What was reorganized:</h5>
+  Documentation(info="<html>
+<h4>Three-Zone Building Model - Clean Layout</h4>
+<p>Three clearly separated horizontal zone rows:</p>
 <ul>
-<li>✅ Parameters (geometry, setpoints, yMin values)</li>
-<li>✅ Inputs (occupancy, appliances)</li>
-<li>✅ Outputs (temperatures, valve positions)</li>
-<li>✅ Controllers (PI_roof, PI_living, PI_cellar)</li>
-<li>✅ Hydronic systems (roof_hydSys, living_hydSys, cellar_hydSys)</li>
-<li>✅ Building zones (roof_zone, living_zone, cellar_zone)</li>
-<li>✅ Setpoint constants</li>
-<li>✅ Window shading constants</li>
-<li>✅ Solar radiation constants</li>
-<li>✅ Flow approximation gains</li>
-<li>✅ All equation connections</li>
+<li><b>CELLAR</b> (y=+140): top row</li>
+<li><b>LIVING</b> (y=0):   middle row (priority zone)</li>
+<li><b>ROOF</b>   (y=-140): bottom row</li>
 </ul>
-
-<h5>What was NOT changed:</h5>
-<ul>
-<li>✅ All parameter VALUES remain identical</li>
-<li>✅ Hydraulic topology unchanged (Living still has priority)</li>
-<li>✅ Control strategy unchanged</li>
-<li>✅ All connections preserved</li>
-</ul>
-
-<p><b>This is purely a COSMETIC reorganization for better readability!</b></p>
+<p>Column layout (left to right): TRefConst | PI | Valve | HydSys | Zone | qv_approx</p>
 </html>"));
 end ThreeZoneBuilding_optimized;

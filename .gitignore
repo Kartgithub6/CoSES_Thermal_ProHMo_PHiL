@@ -1,14 +1,25 @@
-# Dymola / simulation outputs & logs (common)
+# ===============================
+# DYMOLA / MODELICA
+# ===============================
+
+# Simulation results
 *.mat
 *.csv
 *.log
-*.bak
-*.tmp
 *.dsres
 dslog.txt
 dymola.log
+dsin.txt
 
-# FMU / binaries / build artifacts
+# Backup files
+*.bak
+*.bak-mo
+*.tmp
+
+# ===============================
+# FMU / BUILD ARTIFACTS
+# ===============================
+
 *.fmu
 *.dll
 *.so
@@ -18,14 +29,25 @@ dymola.log
 *.o
 *.a
 *.lib
-
-# Zip/exports (optional)
 *.zip
 
-# OS junk
+# ===============================
+# IDE / SYSTEM
+# ===============================
+
+.vscode/
 .DS_Store
 Thumbs.db
 
-# Python cache (if any scripts exist)
+# ===============================
+# PYTHON (if used)
+# ===============================
+
 __pycache__/
 *.pyc
+
+# ===============================
+# DYMOLA PACKAGE BACKUPS
+# ===============================
+
+package.order.txt

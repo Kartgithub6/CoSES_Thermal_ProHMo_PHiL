@@ -10,10 +10,83 @@ model HeatedZone
 
 
   model InnerMass "Properties of an inner Mass V1.0"
-    parameter Real V( quantity="Geometry.Volume", displayUnit="m3") = 6 "Inner additional volumes (e.g. inner walls)";
-    parameter Real rho( quantity="Thermics.Density", displayUnit="kg/m3") = 1800 "Density";
-    parameter Real cp( quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg.K)") = 920 "Specific heat capacity"; // 4177 or 920
-    annotation(Icon(coordinateSystem(extent={{-100,50},{100,-50}})));
+    parameter Real V(unit="m3", quantity="Geometry.Volume", displayUnit="m3") = 6
+      "Inner additional volumes (e.g. inner walls)";
+    parameter Real rho(unit="kg/m3", quantity="Thermics.Density", displayUnit="kg/m3") = 1800
+      "Density";
+    parameter Real cp(unit="J/(kg.K)", quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg.K)") = 920
+      "Specific heat capacity";
+
+    annotation(
+      Icon(
+        coordinateSystem(extent={{-100,-100},{100,100}}, preserveAspectRatio=true),
+        graphics={
+          Rectangle(
+            extent={{-90,70},{90,-70}},
+            lineColor={80,80,80},
+            fillColor={180,180,180},
+            fillPattern=FillPattern.Solid,
+            radius=10),
+          Rectangle(
+            extent={{-75,55},{75,-55}},
+            lineColor={100,100,100},
+            fillColor={210,210,210},
+            fillPattern=FillPattern.Solid,
+            radius=8),
+          Rectangle(
+            extent={{-60,40},{60,-40}},
+            lineColor={120,120,120},
+            fillColor={{235,235,235},
+            fillPattern}),
+          Text(
+            extent={{-50,35},{50,-35}},
+            textString="C",
+            textColor={0,0,0},
+            textStyle={TextStyle.Bold}),
+          Text(
+            extent={{10,-20},{45,-40}},
+            textString="th",
+            textColor={100,100,100}),
+          Line(
+            points={{-85,30},{85,30}},
+            color={150,150,150},
+            thickness=0.5,
+            pattern=LinePattern.Dash),
+          Line(
+            points={{-85,0},{85,0}},
+            color={150,150,150},
+            thickness=0.5,
+            pattern=LinePattern.Dash),
+          Line(
+            points={{-85,-30},{85,-30}},
+            color={150,150,150},
+            thickness=0.5,
+            pattern=LinePattern.Dash),
+          Text(
+            extent={{-90,-75},{90,-90}},
+            textString="MASS",
+            textColor={0,0,0},
+            textStyle={TextStyle.Bold}),
+          Text(
+            extent={{-100,90},{100,130}},
+            textString="%name",
+            textColor={0,0,255})}
+          // Outermost layer (darkest - representing solid mass)
+
+          // Middle layer (lighter shade)
+
+          // Inner layer (lightest)
+
+          // Thermal capacity symbol (large C)
+
+          // Small subscript "th" for thermal
+
+          // Horizontal lines suggesting layers/stratification
+
+          // Label at bottom
+
+          // Component name
+));
   end InnerMass;
 protected
   InnerMass Masses[Bound](
@@ -21,7 +94,7 @@ protected
     each rho = rhoMass1,
     each V   = VMass1)
     "Inner masses model"
-    annotation(Placement(transformation(extent={{-98,86},{-78,96}})));
+    annotation(Placement(transformation(extent={{12,-64},{40,-36}})));
 
 public
   Boundary Boundaries[Bound](
@@ -66,41 +139,37 @@ public
     groundContact = {groundContact1, groundContact2, groundContact3},
 
     lambdaBound   = {lambdaBound1, lambdaBound2, lambdaBound3}
-    /* // 14 Dec 23.00 commented
-    // 14 Dec 23.00 - Binding equations for input variables
-    TBoundIn = fill(TZoneAct, Bound),
-    TBoundOut = TAmbientBound*/
 
 )   "Boundary model"
-    annotation(Placement(transformation(extent={{-126,86},{-106,96}})));
+    annotation(Placement(transformation(extent={{-34,-66},{-6,-38}})));
 
   // ------------------------------------------------------------------
   // Boundary result variables needed by equations later in the model
   // (must be declared here so they exist when used)
   // ------------------------------------------------------------------
-  Real TBoundIn[Bound](each start=293.15, quantity="Thermics.Temp", displayUnit="°C")
+  Real TBoundIn[Bound](each start=293.15, unit="K", quantity="Thermics.Temp", displayUnit="degC")
     "Inner temperature of boundary"
     annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-  Real TBoundOut[Bound](each start=293.15, quantity="Thermics.Temp", displayUnit="°C")
+  Real TBoundOut[Bound](each start=293.15, unit="K", quantity="Thermics.Temp", displayUnit="degC")
     "Outer temperature of boundary"
     annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
 
-  Real QBoundIn[Bound](quantity="Basics.Power", displayUnit="kW")
+  Real QBoundIn[Bound](unit="W", quantity="Basics.Power", displayUnit="kW")
     "Inner heat losses/gains due to Boundary"
     annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
       tab="Results 2", __esi_showAs=ShowAs.Result));
 
-  Real QBoundChange[Bound](quantity="Basics.Power", displayUnit="kW")
+  Real QBoundChange[Bound](unit="W", quantity="Basics.Power", displayUnit="kW")
     "Interchanged heat between outer and inner parts of Boundaries"
     annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
       tab="Results 2", __esi_showAs=ShowAs.Result));
 
-  Real QBoundOut[Bound](quantity="Basics.Power", displayUnit="kW")
+  Real QBoundOut[Bound](unit="W", quantity="Basics.Power", displayUnit="kW")
     "Outer heat losses/gains due to Boundary"
     annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
       tab="Results 2", __esi_showAs=ShowAs.Result));
 
-  Real TGround[Bound](each start=283.15, quantity="Thermics.Temp", displayUnit="°C")
+  Real TGround[Bound](each start=283.15, unit="K", quantity="Thermics.Temp", displayUnit="degC")
     "Ground temperature for ground-contact boundaries"
     annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
 
@@ -122,37 +191,37 @@ protected
   parameter Integer contactBound1 = 0
     "Boundary 1 connected to: '0' = Ambience, '1,2,3 …' = Zone"
     annotation(Dialog(group="Ambience", tab="Boundary 1 - Walls"));
-  parameter Real ABound1(quantity="Geometry.Area", displayUnit="m²") = 4*30
+  parameter Real ABound1(unit="m2", quantity="Geometry.Area", displayUnit="m2") = 4*30
     "Total surface area of equivalent walls (sum of 4 sides)"
     annotation(Dialog(group="Dimensions", tab="Boundary 1 - Walls"));
-  parameter Real AWindow1(quantity="Geometry.Area", displayUnit="m²") = 4*5
+  parameter Real AWindow1(unit="m2", quantity="Geometry.Area", displayUnit="m2") = 4*5
     "Total window area in exterior walls"
     annotation(Dialog(group="Dimensions", tab="Boundary 1 - Walls"));
-  parameter Real AOthers1(quantity="Geometry.Area", displayUnit="m²") = 0
+  parameter Real AOthers1(unit="m2", quantity="Geometry.Area", displayUnit="m2") = 0
     "Other surface area (doors, etc.)"
     annotation(Dialog(group="Dimensions", tab="Boundary 1 - Walls"));
-  parameter Real dBound1(quantity="Geometry.Length", displayUnit="m") = 0.36
+  parameter Real dBound1(unit="m", quantity="Geometry.Length", displayUnit="m") = 0.36
     "Average wall thickness"
     annotation(Dialog(group="Dimensions", tab="Boundary 1 - Walls"));
-  parameter Real rhoBound1(quantity="Thermics.Density", displayUnit="kg/m³") = 1800
+  parameter Real rhoBound1(unit="kg/m3", quantity="Thermics.Density", displayUnit="kg/m3") = 1800
     "Average wall density (masonry)"
     annotation(Dialog(group="Material", tab="Boundary 1 - Walls"));
-  parameter Real cpBound1(quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg·K)") = 920
+  parameter Real cpBound1(unit="J/(kg.K)", quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg.K)") = 920
     "Average wall specific heat capacity"
     annotation(Dialog(group="Material", tab="Boundary 1 - Walls"));
-  parameter Real uBound1(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 0.20
+  parameter Real uBound1(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 0.20
     "Equivalent U-value for combined wall structure"
     annotation(Dialog(group="Heat Transmission", tab="Boundary 1 - Walls"));
-  parameter Real uWindow1(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 1
+  parameter Real uWindow1(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 1
     "Window U-value (double glazing)"
     annotation(Dialog(group="Heat Transmission", tab="Boundary 1 - Walls"));
-  parameter Real uOthers1(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 0
+  parameter Real uOthers1(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 0
     "Other surface transmission (unused)"
     annotation(Dialog(group="Heat Transmission", tab="Boundary 1 - Walls"));
   parameter Boolean groundContact1 = false if not contactBound1>0
     "Walls are not in ground contact"
     annotation(Dialog(group="Ground Position", tab="Boundary 1 - Walls"));
-  parameter Real depthBound1(quantity="Geometry.Length", displayUnit="m") = 1
+  parameter Real depthBound1(unit="m", quantity="Geometry.Length", displayUnit="m") = 1
     if groundContact1 "Depth below ground if wall has ground contact"
     annotation(Dialog(group="Ground Position", tab="Boundary 1 - Walls"));
   parameter Real epsDirt1 = 0.1
@@ -164,10 +233,10 @@ protected
   parameter Real epsFrame1 = 0.2
     "Frame correction factor for windows"
     annotation(Dialog(group="Correction Values", tab="Boundary 1 - Walls"));
-  parameter Real alphaInclination1(quantity="Geometry.Angle", displayUnit="°") = 1.5707963267948966
+  parameter Real alphaInclination1(unit="rad", quantity="Geometry.Angle", displayUnit="rad") = 1.5707963267948966
     "Average wall inclination angle (vertical)"
     annotation(Dialog(group="Alignment", tab="Boundary 1 - Walls"));
-  parameter Real alphaOrientation1(quantity="Geometry.Angle", displayUnit="°") = 0
+  parameter Real alphaOrientation1(unit="rad", quantity="Geometry.Angle", displayUnit="rad") = 0
     "Orientation (not used for combined wall)"
     annotation(Dialog(group="Alignment", tab="Boundary 1 - Walls"));
   parameter Real gWindow1 = 0.6
@@ -176,46 +245,46 @@ protected
   parameter Real alphaBound1 = 0.2
     "Wall absorptance (light surface)"
     annotation(Dialog(group="Heat Absorption", tab="Boundary 1 - Walls"));
-  parameter Real alphaBoundOut1(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 20
+  parameter Real alphaBoundOut1(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 20
     if not groundContact1 "Exterior convective coefficient (walls)"
     annotation(Dialog(group="Heat Absorption", tab="Boundary 1 - Walls"));
-  parameter Real alphaBoundIn1(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 7.5
+  parameter Real alphaBoundIn1(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 7.5
     "Interior convective coefficient (walls)"
     annotation(Dialog(group="Heat Absorption", tab="Boundary 1 - Walls"));
   parameter Integer contactBound2 = 0 if Bound > 1
     "Boundary 2 connected to: 0 = Ground, 1.. = Zone"
     annotation(Dialog(group="Ambience", tab="Boundary 2 - Floor"));
-  parameter Real ABound2(quantity="Geometry.Area", displayUnit="m²") = 30 if Bound > 1
+  parameter Real ABound2(unit="m2", quantity="Geometry.Area", displayUnit="m2") = 30 if Bound > 1
     "Floor surface area"
     annotation(Dialog(group="Dimensions", tab="Boundary 2 - Floor"));
-  parameter Real AWindow2(quantity="Geometry.Area", displayUnit="m²") = 0 if Bound > 1
+  parameter Real AWindow2(unit="m2", quantity="Geometry.Area", displayUnit="m2") = 0 if Bound > 1
     "Window area (none for floor)"
     annotation(Dialog(group="Dimensions", tab="Boundary 2 - Floor"));
-  parameter Real AOthers2(quantity="Geometry.Area", displayUnit="m²") = 0 if Bound > 1
+  parameter Real AOthers2(unit="m2", quantity="Geometry.Area", displayUnit="m2") = 0 if Bound > 1
     "Other floor surfaces"
     annotation(Dialog(group="Dimensions", tab="Boundary 2 - Floor"));
-  parameter Real dBound2(quantity="Geometry.Length", displayUnit="m") = 0.36 if Bound > 1
+  parameter Real dBound2(unit="m", quantity="Geometry.Length", displayUnit="m") = 0.36 if Bound > 1
     "Floor slab thickness"
     annotation(Dialog(group="Dimensions", tab="Boundary 2 - Floor"));
-  parameter Real rhoBound2(quantity="Thermics.Density", displayUnit="kg/m³") = 1800 if Bound > 1
+  parameter Real rhoBound2(unit="kg/m3", quantity="Thermics.Density", displayUnit="kg/m3") = 1800 if Bound > 1
     "Floor density"
     annotation(Dialog(group="Material", tab="Boundary 2 - Floor"));
-  parameter Real cpBound2(quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg·K)") = 920 if Bound > 1
+  parameter Real cpBound2(unit="J/(kg.K)", quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg.K)") = 920 if Bound > 1
     "Floor specific heat capacity"
     annotation(Dialog(group="Material", tab="Boundary 2 - Floor"));
-  parameter Real uBound2(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 0.20 if Bound > 1
+  parameter Real uBound2(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 0.20 if Bound > 1
     "Floor U-value (ground contact)"
     annotation(Dialog(group="Heat Transmission", tab="Boundary 2 - Floor"));
-  parameter Real uWindow2(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 0 if Bound > 1
+  parameter Real uWindow2(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 0 if Bound > 1
     "Window U-value (unused)"
     annotation(Dialog(group="Heat Transmission", tab="Boundary 2 - Floor"));
-  parameter Real uOthers2(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 0 if Bound > 1
+  parameter Real uOthers2(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 0 if Bound > 1
     "Other surfaces U-value"
     annotation(Dialog(group="Heat Transmission", tab="Boundary 2 - Floor"));
   parameter Boolean groundContact2 = true if Bound > 1 and not contactBound2 > 0
     "Floor has ground contact"
     annotation(Dialog(group="Ground Position", tab="Boundary 2 - Floor"));
-  parameter Real depthBound2(quantity="Geometry.Length", displayUnit="m") = 1.5
+  parameter Real depthBound2(unit="m", quantity="Geometry.Length", displayUnit="m") = 1.5
     if Bound > 1 and groundContact2
     "Depth below ground"
     annotation(Dialog(group="Ground Position", tab="Boundary 2 - Floor"));
@@ -228,10 +297,10 @@ protected
   parameter Real epsFrame2 = 0 if Bound > 1
     "Frame correction"
     annotation(Dialog(group="Correction Values", tab="Boundary 2 - Floor"));
-  parameter Real alphaInclination2(quantity="Geometry.Angle", displayUnit="°") = 0 if Bound > 1
+  parameter Real alphaInclination2(unit="rad", quantity="Geometry.Angle", displayUnit="rad") = 0 if Bound > 1
     "Floor inclination"
     annotation(Dialog(group="Alignment", tab="Boundary 2 - Floor"));
-  parameter Real alphaOrientation2(quantity="Geometry.Angle", displayUnit="°") = 0 if Bound > 1
+  parameter Real alphaOrientation2(unit="rad", quantity="Geometry.Angle", displayUnit="rad") = 0 if Bound > 1
     "Floor orientation"
     annotation(Dialog(group="Alignment", tab="Boundary 2 - Floor"));
   parameter Real gWindow2 = 0 if Bound > 1
@@ -240,47 +309,47 @@ protected
   parameter Real alphaBound2 = 0 if Bound > 1
     "Absorption coefficient"
     annotation(Dialog(group="Heat Absorption", tab="Boundary 2 - Floor"));
-  parameter Real alphaBoundOut2(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 20
+  parameter Real alphaBoundOut2(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 20
     if Bound > 1 and not groundContact2
     "Outer convective coefficient"
     annotation(Dialog(group="Heat Absorption", tab="Boundary 2 - Floor"));
-  parameter Real alphaBoundIn2(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 7.5 if Bound > 1
+  parameter Real alphaBoundIn2(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 7.5 if Bound > 1
     "Inner convective coefficient"
     annotation(Dialog(group="Heat Absorption", tab="Boundary 2 - Floor"));
   parameter Integer contactBound3 = 0 if Bound > 2
     "Boundary 3 connected to: 0 = Ambience"
     annotation(Dialog(group="Ambience", tab="Boundary 3 - Roof"));
-  parameter Real ABound3(quantity="Geometry.Area", displayUnit="m²") = 30 if Bound > 2
+  parameter Real ABound3(unit="m2", quantity="Geometry.Area", displayUnit="m2") = 30 if Bound > 2
     "Roof surface area"
     annotation(Dialog(group="Dimensions", tab="Boundary 3 - Roof"));
-  parameter Real AWindow3(quantity="Geometry.Area", displayUnit="m²") = 0 if Bound > 2
+  parameter Real AWindow3(unit="m2", quantity="Geometry.Area", displayUnit="m2") = 0 if Bound > 2
     "Roof window area"
     annotation(Dialog(group="Dimensions", tab="Boundary 3 - Roof"));
-  parameter Real AOthers3(quantity="Geometry.Area", displayUnit="m²") = 0 if Bound > 2
+  parameter Real AOthers3(unit="m2", quantity="Geometry.Area", displayUnit="m2") = 0 if Bound > 2
     "Other roof surfaces"
     annotation(Dialog(group="Dimensions", tab="Boundary 3 - Roof"));
-  parameter Real dBound3(quantity="Geometry.Length", displayUnit="m") = 0.36 if Bound > 2
+  parameter Real dBound3(unit="m", quantity="Geometry.Length", displayUnit="m") = 0.36 if Bound > 2
     "Roof slab thickness"
     annotation(Dialog(group="Dimensions", tab="Boundary 3 - Roof"));
-  parameter Real rhoBound3(quantity="Thermics.Density", displayUnit="kg/m³") = 1800 if Bound > 2
+  parameter Real rhoBound3(unit="kg/m3", quantity="Thermics.Density", displayUnit="kg/m3") = 1800 if Bound > 2
     "Roof density"
     annotation(Dialog(group="Material", tab="Boundary 3 - Roof"));
-  parameter Real cpBound3(quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg·K)") = 920 if Bound > 2
+  parameter Real cpBound3(unit="J/(kg.K)", quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg.K)") = 920 if Bound > 2
     "Roof specific heat capacity"
     annotation(Dialog(group="Material", tab="Boundary 3 - Roof"));
-  parameter Real uBound3(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 0.20 if Bound > 2
+  parameter Real uBound3(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 0.20 if Bound > 2
     "Roof U-value"
     annotation(Dialog(group="Heat Transmission", tab="Boundary 3 - Roof"));
-  parameter Real uWindow3(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 0 if Bound > 2
+  parameter Real uWindow3(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 0 if Bound > 2
     "Window U-value (unused)"
     annotation(Dialog(group="Heat Transmission", tab="Boundary 3 - Roof"));
-  parameter Real uOthers3(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 0 if Bound > 2
+  parameter Real uOthers3(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 0 if Bound > 2
     "Other U-value"
     annotation(Dialog(group="Heat Transmission", tab="Boundary 3 - Roof"));
   parameter Boolean groundContact3 = false if Bound > 2 and not contactBound3 > 0
     annotation(Dialog(group="Ground Position", tab="Boundary 3 - Roof"));
 
-  parameter Real depthBound3(quantity="Geometry.Length", displayUnit="m") = 0
+  parameter Real depthBound3(unit="m", quantity="Geometry.Length", displayUnit="m") = 0
     if Bound > 2 and groundContact3
     "Depth (unused)"
     annotation(Dialog(group="Ground Position", tab="Boundary 3 - Roof"));
@@ -290,10 +359,10 @@ protected
     annotation(Dialog(group="Correction Values", tab="Boundary 3 - Roof"));
   parameter Real epsFrame3 = 0.2 if Bound > 2
     annotation(Dialog(group="Correction Values", tab="Boundary 3 - Roof"));
-  parameter Real alphaInclination3(quantity="Geometry.Angle", displayUnit="°") = 0 if Bound > 2
+  parameter Real alphaInclination3(unit="rad", quantity="Geometry.Angle", displayUnit="rad") = 0 if Bound > 2
     "Floor inclination"
     annotation(Dialog(group="Alignment", tab="Boundary 3 - Roof"));
-  parameter Real alphaOrientation3(quantity="Geometry.Angle", displayUnit="°") = 0 if Bound > 2
+  parameter Real alphaOrientation3(unit="rad", quantity="Geometry.Angle", displayUnit="rad") = 0 if Bound > 2
     "Floor orientation"
     annotation(Dialog(group="Alignment", tab="Boundary 3 - Roof"));
   parameter Real gWindow3 = 0 if Bound > 2
@@ -302,11 +371,11 @@ protected
   parameter Real alphaBound3 = 0 if Bound > 2
     "Absorption coefficient"
     annotation(Dialog(group="Heat Absorption", tab="Boundary 3 - Roof"));
-  parameter Real alphaBoundOut3(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 20
+  parameter Real alphaBoundOut3(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 20
     if Bound > 2 and not groundContact3
     "Outer convective coefficient"
     annotation(Dialog(group="Heat Absorption", tab="Boundary 3 - Roof"));
-  parameter Real alphaBoundIn3(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 7.5 if Bound > 2
+  parameter Real alphaBoundIn3(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 7.5 if Bound > 2
     "Inner convective coefficient"
     annotation(Dialog(group="Heat Absorption", tab="Boundary 3 - Roof"));
   parameter Modelica.Units.SI.Area ATransparentTot =
@@ -333,38 +402,38 @@ public
   Modelica.Thermal.HeatTransfer.Components.ThermalConductor
     infiltrationLoss(G=infiltrationRate*1.2*1005)
     "(1.2 kg/m³ = ρ_air, 1005 J/kg·K = cp_air) = infiltrationRate * rhoAir * cpAir"
-    annotation (Placement(transformation(extent={{54,-6},{72,12}})));
+    annotation (Placement(transformation(extent={{44,-6},{62,12}})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedTemperature
     T_infiltration_air annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=0,
-        origin={102,0})));
-  Modelica.Blocks.Sources.Constant T_outside(k=10  // 21 Dec FIX v11: Added default outdoor temp (10°C)
-)   annotation (Placement(
+        origin={88,-8})));
+  Modelica.Blocks.Sources.Constant T_outside(k=10)   annotation (Placement(
         transformation(
-        extent={{-10,-10},{10,10}},
+        extent={{-9,-9},{9,9}},
         rotation=180,
-        origin={142,0})));
+        origin={91,91})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow occLoad
     "Occupany Load"
     annotation (Placement(transformation(extent={{-10,-10},{10,10}},
         rotation=180,
-        origin={90,66})));
+        origin={56,64})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow appLoad
     "Appliance load"
-    annotation (Placement(transformation(extent={{-10,54},{10,74}})));
+    annotation (Placement(transformation(extent={{-64,54},{-44,74}})));
 
 public
   Modelica.Blocks.Interfaces.RealOutput TZone(quantity="ThermodynamicTemperature", unit="K", displayUnit="degC") "Zone temperature" annotation (Placement(
         transformation(
         extent={{-10,-10},{10,10}},
         rotation=270,
-  origin={-40,-102})));
+  origin={-60,-100})));
 
 
   input Modelica.Blocks.Interfaces.RealInput TZoneRef(quantity="ThermodynamicTemperature", unit="K", displayUnit="degC") "Desired zone temperature"
   annotation (
-    Placement(transformation(extent={{84,26},{112,54}})),
+    Placement(transformation(extent={{88,22},{112,46}}), iconTransformation(
+          extent={{88,22},{112,46}})),
     iconTransformation(transformation(extent={{84,26},{112,54}})),
     Dialog(
       group="Others",
@@ -376,7 +445,7 @@ public
     annotation (
       Placement(
         transformation(
-          origin={72,-103},
+          origin={82,-101},
           extent = {{-10, -10}, {10, 10}},
           rotation = -90)),
       iconTransformation(
@@ -392,7 +461,8 @@ public
   input Modelica.Blocks.Interfaces.RealInput WindowShading[Bound]
     "Vector for external shading of windows for each boundary (0=fully irradiated, 1=fully shaded)"
     annotation (
-  Placement(transformation(extent={{-83,-119},{-123,-79}})),
+  Placement(transformation(extent={{-84,-110},{-117,-77}}), iconTransformation(
+          extent={{-83,-109},{-117,-77}})),
         iconTransformation(
             transformation(extent={{370,-20},{330,20}})),
         Dialog(
@@ -433,107 +503,100 @@ public
       table = [0, 0],
       tableName = CoolFactorTable,
       fileName = DINFile)
-    if DINcalc annotation (Placement(transformation(extent={{184,-40},{
-            204,-20}})));
-  Modelica.Blocks.Tables.CombiTable1Dv CoolLoadFactorLigth(
+    if DINcalc annotation (Placement(transformation(extent={{140,-28},{160,-8}})));
+  Modelica.Blocks.Tables.CombiTable1Dv CoolLoadFactorLight(
       tableOnFile = DINcalc,
       table = [0, 0],
       tableName = CoolFactorTable,
       fileName = DINFile)
-    if DINcalc annotation (Placement(transformation(extent={{186,-68},{
-            206,-48}})));
+    if DINcalc annotation (Placement(transformation(extent={{140,-64},{160,-44}})));
   Modelica.Blocks.Tables.CombiTable1Dv CoolLoadFactorMachine(
       tableOnFile = DINcalc,
       table = [0, 0],
       tableName = CoolFactorTable,
       fileName = DINFile)
-    if DINcalc annotation (Placement(transformation(extent={{184,-10},{
-            204,10}})));
+    if DINcalc annotation (Placement(transformation(extent={{140,44},{160,64}})));
   Modelica.Blocks.Tables.CombiTable1Dv AppliedLoadFactorLight(
       tableOnFile = DINcalc,
       table = [0, 0],
       tableName = LoadLightTable,
       fileName = DINFile)
-    if DINcalc annotation (Placement(transformation(extent={{182,22},{202,
-            42}})));
+    if DINcalc annotation (Placement(transformation(extent={{140,80},{160,100}})));
   Modelica.Blocks.Tables.CombiTable1Dv AppliedLoadFactorMachine(
       tableOnFile = DINcalc,
       table = [0, 0],
       tableName = LoadMachineTable,
       fileName = DINFile)
-    if DINcalc annotation (Placement(transformation(extent={{186,-94},{
-            206,-74}})));
+    if DINcalc annotation (Placement(transformation(extent={{140,-100},{160,-80}})));
   Modelica.Blocks.Tables.CombiTable1Dv PelDIN(
       tableOnFile = DINcalc,
       table = [0, 0],
       tableName = PelDINTable,
       fileName = PelDINFile)
-    if DINcalc annotation (Placement(transformation(extent={{220,-10},{
-            240,10}})));
+    if DINcalc annotation (Placement(transformation(extent={{140,12},{160,32}})));
   Modelica.Blocks.Tables.CombiTable1Dv NumberPersonDIN(
       tableOnFile = DINcalc,
       table = [0, 0],
       tableName = NumberPersonDINTable,
       fileName = NumberPersonDINFile)
-    if DINcalc annotation (Placement(transformation(extent={{-206,-6},{
-            -186,14}})));
+    if DINcalc annotation (Placement(transformation(extent={{-160,-10},{-140,10}})));
   Modelica.Blocks.Tables.CombiTable1Dv NumberPerson(
       tableOnFile = not DINcalc,
       table = [0, 0],
       tableName = NumberPersonTable,
       fileName = InputDataFile)
-    if not DINcalc annotation (Placement(transformation(extent={{-206,-92},{-186,
-            -72}})));
+    if not DINcalc annotation (Placement(transformation(extent={{-160,-100},{
+            -140,-80}})));
 
   Modelica.Blocks.Tables.CombiTable1Dv BaseLoad(
       tableOnFile = not DINcalc,
       table = [0, 0],
       tableName = BaseLoadTable,
       fileName = InputDataFile)
-    if not DINcalc annotation (Placement(transformation(extent={{-206,24},
-            {-186,44}})));
+    if not DINcalc annotation (Placement(transformation(extent={{-160,22},{-140,
+            42}})));
   Modelica.Blocks.Tables.CombiTable1Dv NormLoad(
       tableOnFile = not DINcalc,
       table = [0, 0],
       tableName = NormLoadTable,
       fileName = InputDataFile)
-    if not DINcalc annotation (Placement(transformation(extent={{-206,54},{-186,
-            74}})));
+    if not DINcalc annotation (Placement(transformation(extent={{-160,52},{-140,
+            72}})));
   Modelica.Blocks.Tables.CombiTable1Dv MachineLoad(
       tableOnFile = not DINcalc,
       table = [0, 0],
       tableName = MachineLoadTable,
       fileName = InputDataFile)
-    if not DINcalc annotation (Placement(transformation(extent={{-206,82},{-186,
-            102}})));
+    if not DINcalc annotation (Placement(transformation(extent={{-160,80},{-140,
+            100}})));
   Modelica.Blocks.Tables.CombiTable1Dv LightLoad(
       tableOnFile = not DINcalc,
       table = [0, 0],
       tableName = LightLoadTable,
       fileName = InputDataFile)
-    if not DINcalc annotation (Placement(transformation(extent={{-206,-34},{-186,
-            -14}})));
+    if not DINcalc annotation (Placement(transformation(extent={{-160,-38},{
+            -140,-18}})));
   Modelica.Blocks.Tables.CombiTable1Dv InnerLoad(
       tableOnFile = not DINcalc,
       table = [0, 0],
       tableName = InnerLoadTable,
       fileName = InputDataFile)
-    if not DINcalc annotation (Placement(transformation(extent={{-206,-64},
-            {-186,-44}})));
+    if not DINcalc annotation (Placement(transformation(extent={{-160,-68},{
+            -140,-48}})));
 
   Modelica.Blocks.Interfaces.RealOutput ZoneTemperatures[NumberZones]  "Temperatures of neighbouring building zones"
-    annotation (Placement(transformation(extent={{98,-50},{118,-30}})));
+    annotation (Placement(transformation(extent={{100,-64},{120,-44}})));
 protected
-  Real AngleBound[Bound](quantity="Geometry.Angle", displayUnit="°")
+  Real AngleBound[Bound](unit="rad", quantity="Geometry.Angle", displayUnit="rad")
     "Radiation angle to boundary"
     annotation(Dialog(group="Others", tab="Results 1", __esi_showAs=ShowAs.Result));
-  Real qvHeat(quantity="Thermics.VolumeFlow", displayUnit="m3/h")
+  Real qvHeat(unit="m3/s", quantity="Thermics.VolumeFlow", displayUnit="m3/h")
     "Volume flow of heating system"
     annotation(Dialog(group="Others", tab="Results 1", __esi_showAs=ShowAs.Result));
-  Real CZoneAir(quantity="Thermodynamics.SpecHeatCapacity", displayUnit="kJ/(kg K)")
+  Real CZoneAir(unit="J/K", quantity="Thermodynamics.HeatCapacity", displayUnit="J/K")
     "Air heat capacity of the zone"
     annotation(Dialog(group="Others", tab="Results 1", __esi_showAs=ShowAs.Result));
-  Real CZoneMass(quantity="Thermodynamics.SpecHeatCapacity", displayUnit="kJ/(kg K)")
+  Real CZoneMass(unit="J/K", quantity="Thermodynamics.HeatCapacity", displayUnit="J/K")
     "Mass heat capacity of the zone"
     annotation(Dialog(group="Others", tab="Resuslts 1", __esi_showAs=ShowAs.Result));
 
@@ -558,25 +621,25 @@ public
     ratioWinConRad=0.09,
     AExt=fill(ABound1 - (AWindow1 + AWindow2 + AWindow3), 1),
     nExt=1,
-    RExt=fill(dBound1/(uBound1*(ABound1 - (AWindow1 + AWindow2 + AWindow3)) + 1e-6), 1),
+    RExt=fill(1/(uBound1*(ABound1 - (AWindow1 + AWindow2 + AWindow3)) + 1e-6), 1),
     RExtRem=0.1265217391,
     CExt=fill(rhoBound1*cpBound1*dBound1*(ABound1 - (AWindow1 + AWindow2 + AWindow3)), 1),
     AInt=0,
     AFloor=ABound2,
     nFloor=1,
-    RFloor=fill(dBound2/(uBound2*ABound2 + 1E-6), 1),
+    RFloor=fill(1/(uBound2*ABound2 + 1E-6), 1),
     RFloorRem=0.1265217391,
     CFloor=fill(rhoBound2*cpBound2*dBound2*ABound2, 1),
     ARoof=ABound3,
     nRoof=1,
-    RRoof=fill(dBound3/(uBound3*ABound3 + 1E-6), 1),
+    RRoof=fill(1/(uBound3*ABound3 + 1E-6), 1),
     RRoofRem=0.1265217391,
     CRoof=fill(rhoBound3*cpBound3*dBound3*ABound3, 1))
-    annotation (Placement(transformation(extent={{-20,-18},{28,18}})));
+    annotation (Placement(transformation(extent={{-32,-18},{30,24}})));
 
   parameter CoSES_Thermal_ProHMo_PHiL.Interfaces.EnvironmentConditions EnvironmentConditions
   annotation (Placement(
-        transformation(extent={{-96,-84},{-74,-62}}), iconTransformation(extent={{-96,-84},
+        transformation(extent={{-102,82},{-82,102}}), iconTransformation(extent={{-96,-84},
       {-74,-62}})));
 
   // added for issue with numberPerson
@@ -586,127 +649,128 @@ public
   Modelica.Blocks.Sources.Constant zeroMachine(k=0);
   Modelica.Blocks.Sources.Constant zeroLight(k=0);
   Modelica.Blocks.Sources.Constant zeroInner(k=0);
-  Modelica.Blocks.Sources.Constant zeroSolRad[fourElements.nOrientations](each k=0);
+
 
 
 protected
   Real TZoneAct(
+    unit="K",
     quantity="Thermics.Temp",
-    displayUnit="°C",
+    displayUnit="degC",
     start = TZoneInit,
     fixed = true)
     "Actual zone temperature"
     annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
 
-  Real TAmbientBound[Bound](quantity="Thermics.Temp", displayUnit="°C")
+  Real TAmbientBound[Bound](unit="K", quantity="Thermics.Temp", displayUnit="degC")
     "Ambient temperature per boundary"
     annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-  Real TFlowHeat(quantity="Thermics.Temp", displayUnit="°C")
+  Real TFlowHeat(unit="K", quantity="Thermics.Temp", displayUnit="degC")
     "Flow temperature of heating system"
     annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-  Real TReturnHeat(quantity="Thermics.Temp", displayUnit="°C")
+  Real TReturnHeat(unit="K", quantity="Thermics.Temp", displayUnit="degC")
     "Return temperature of heating system"
     annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
 
-  Real deltaTBound[Bound](quantity="Thermics.TempDiff", displayUnit="K")
+  Real deltaTBound[Bound](unit="K", quantity="Thermics.TempDiff", displayUnit="K")
     "Temperature difference across each boundary"
     annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
 
 protected
-  Real QHeatCoolLoad(quantity="Basics.Power", displayUnit="kW")
+  Real QHeatCoolLoad(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Heating/cooling load of building"
     annotation(Dialog(group="Heating and Cooling Power", tab="Results 1", __esi_showAs=ShowAs.Result));
 
 
 protected
-  Real QTotal(quantity="Basics.Power", displayUnit="kW")
+  Real QTotal(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Total heating/cooling load"
     annotation(Dialog(group="Heating and Cooling Power", tab="Results 1", __esi_showAs=ShowAs.Result));
 public
-  Real PVent(quantity="Basics.Power", displayUnit="kW")
+  Real PVent(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Effective ventilation power"
     annotation(Dialog(group="Electrical Power", tab="Results 1", __esi_showAs=ShowAs.Result));
 protected
-  Real QVent(quantity="Basics.Power", displayUnit="kW")
+  Real QVent(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Reactive ventilation power"
     annotation(Dialog(group="Electrical Power", tab="Results 1", __esi_showAs=ShowAs.Result));
 public
-  Real Pel(quantity="Basics.Power", displayUnit="kW")
+  Real Pel(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Electrical effective power"
     annotation(Dialog(group="Electrical Power", tab="Results 1", __esi_showAs=ShowAs.Result));
 protected
-  Real Qel(quantity="Basics.Power", displayUnit="kW")
+  Real Qel(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Electrical reactive power"
     annotation(Dialog(group="Electrical Power", tab="Results 1", __esi_showAs=ShowAs.Result));
 public
 
-  Real Eel(quantity="Basics.Energy", displayUnit="kWh")
+  Real Eel(unit="J", quantity="Basics.Energy", displayUnit="kWh")
     "Electrical energy demand"
     annotation(Dialog(group="Energy", tab="Results 1", __esi_showAs=ShowAs.Result));
 protected
-  Real QPerson(quantity="Basics.Power", displayUnit="kW")
+  Real QPerson(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Inner heat yields and losses by persons"
     annotation(Dialog(group="Inner yields and losses - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  Real QLight(quantity="Basics.Power", displayUnit="kW")
+  Real QLight(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Inner heat yields by installed light system"
     annotation(Dialog(group="Inner yields and losses - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  Real QMachine(quantity="Basics.Power", displayUnit="kW")
+  Real QMachine(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Inner heat yields by installed machines"
     annotation(Dialog(group="Inner yields and losses - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  Real QNorm(quantity="Basics.Power", displayUnit="kW")
+  Real QNorm(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Norm heat yields/losses"
     annotation(Dialog(group="Inner yields and losses - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  Real QInner(quantity="Basics.Power", displayUnit="kW")
+  Real QInner(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Inner heat yields/losses"
     annotation(Dialog(group="Inner yields and losses - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  Real QBase(quantity="Basics.Power", displayUnit="kW")
+  Real QBase(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Basic heat yields/losses"
     annotation(Dialog(group="Inner yields and losses - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  Real QelHeat(quantity="Basics.Power", displayUnit="kW")
+  Real QelHeat(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Electrical power causing inner heat gains"
     annotation(Dialog(group="Inner yields and losses - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  Real QTransWindowAbsorp[Bound](quantity="Basics.Power", displayUnit="kW")
+  Real QTransWindowAbsorp[Bound](unit="W", quantity="Basics.Power", displayUnit="kW")
     "Window transmission losses correction vector for solar yields"
     annotation(Dialog(group="Window - Heating and Cooling", tab="Results 2",
                       __esi_showAs=ShowAs.Result));
-  Real QTransWindow[Bound](quantity="Basics.Power", displayUnit="kW")
+  Real QTransWindow[Bound](unit="W", quantity="Basics.Power", displayUnit="kW")
     "Transmission losses vector for window"
     annotation(Dialog(group="Window - Heating and Cooling", tab="Results 2",
                       __esi_showAs=ShowAs.Result));
-  Real QTransOthers[Bound](quantity="Basics.Power", displayUnit="kW")
+  Real QTransOthers[Bound](unit="W", quantity="Basics.Power", displayUnit="kW")
     "Transmission losses vector for other surfaces"
     annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  Real QBound[Bound](quantity="Basics.Power", displayUnit="kW")
+  Real QBound[Bound](unit="W", quantity="Basics.Power", displayUnit="kW")
     "Heat power of Boundary"
     annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
 
-  Real QBoundAbsorp[Bound](quantity="Basics.Power", displayUnit="kW")
+  Real QBoundAbsorp[Bound](unit="W", quantity="Basics.Power", displayUnit="kW")
     "Transmission losses correction vector for Boundaries due to radiation absorption"
     annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
 
-  Real QLAirLeak(quantity="Basics.Power", displayUnit="kW")
+  Real QLAirLeak(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Ventilation losses by air leak"
     annotation(Dialog(group="Ventilation - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  Real QAirComfort(quantity="Basics.Power", displayUnit="kW")
+  Real QAirComfort(unit="W", quantity="Basics.Power", displayUnit="kW")
     "Ventilation losses by comfortable air flow"
     annotation(Dialog(group="Ventilation - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  Real QHeatBridge[Bound](quantity="Basics.Power", displayUnit="kW")
+  Real QHeatBridge[Bound](unit="W", quantity="Basics.Power", displayUnit="kW")
     "Transmission losses vector for heat bridge losses"
     annotation(Dialog(group="Heat Bridge - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
-  Real QHeatBridgeAbsorp[Bound](quantity="Basics.Power", displayUnit="kW")
+  Real QHeatBridgeAbsorp[Bound](unit="W", quantity="Basics.Power", displayUnit="kW")
     "Transmission losses correction vector for heat bridges due to radiation absorption"
     annotation(Dialog(group="Heat Bridge - Heating and Cooling",
                       tab="Results 2", __esi_showAs=ShowAs.Result));
@@ -740,10 +804,10 @@ protected
   parameter Integer MassMin=0 "Minimum number of inner Masses"
     annotation(Dialog(group="Inner Masses",tab="Model Initialization"));
 public
-  parameter Real TZoneInit(quantity="Thermics.Temp", displayUnit="°C") = 294.149 if not LoadCalculation
+  parameter Real TZoneInit(unit="K", quantity="Thermics.Temp", displayUnit="degC") = 294.149 if not LoadCalculation
     "Initial zone temperature"
     annotation(Dialog(group="Temperatures", tab="Model Initialization"));
-  parameter Real TReturnHeatInit(quantity="Thermics.Temp", displayUnit="°C") = 303.149 if not LoadCalculation and Heat
+  parameter Real TReturnHeatInit(unit="K", quantity="Thermics.Temp", displayUnit="degC") = 303.149 if not LoadCalculation and Heat
     "Initial return temperature of heating system"
     annotation(Dialog(group="Temperatures", tab="Model Initialization"));
 
@@ -753,30 +817,30 @@ public
   parameter Boolean useWindowShading = false
     "External shading of windows is enabled"
     annotation(Dialog(group="Shading", tab="Model Initialization"));
-  parameter Real AZone(quantity="Geometry.Area", displayUnit="m²") = 100
+  parameter Real AZone(unit="m2", quantity="Geometry.Area", displayUnit="m2") = 100
     "Net floor space of the zone"
     annotation(Dialog(group="Zone Dimensions", tab="Zone"));
-  parameter Real hZone(quantity="Geometry.Length", displayUnit="m") = 2.5
+  parameter Real hZone(unit="m", quantity="Geometry.Length", displayUnit="m") = 2.5
     "Zone height"
     annotation(Dialog(group="Zone Dimensions", tab="Zone"));
-  parameter Real PLightInstall(quantity="Basics.Power", displayUnit="W") = 300 if DINcalc
+  parameter Real PLightInstall(unit="W", quantity="Basics.Power", displayUnit="W") = 300 if DINcalc
     "Installed electrical power of light"
     annotation(Dialog(group="Installed Electric Devices", tab="Zone"));
-  parameter Real PMachineInstall(quantity="Basics.Power", displayUnit="W") = 1000 if DINcalc
+  parameter Real PMachineInstall(unit="W", quantity="Basics.Power", displayUnit="W") = 1000 if DINcalc
     "Installed electrical power of machines"
     annotation(Dialog(group="Installed Electric Devices", tab="Zone"));
-  parameter Real etaMachine(quantity="Basics.RelMagnitude", displayUnit="%") = 0.4 if DINcalc
+  parameter Real etaMachine(unit="1", quantity="Basics.RelMagnitude", displayUnit="1") = 0.4 if DINcalc
     "Efficiency of machines"
     annotation(Dialog(group="Installed Electric Devices", tab="Zone"));
 public
   parameter Boolean Heat = true
     "Heating is enabled/disabled"
     annotation(Dialog(group="Heating Enabling", tab="Heating System"));
-  parameter Real cpMedHeat(quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg·K)") = 4177
+  parameter Real cpMedHeat(unit="J/(kg.K)", quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg.K)") = 4177
     if not LoadCalculation and Heat
     "Specific heat capacity of heat medium"
     annotation(Dialog(group="Heating Medium", tab="Heating System"));
-  parameter Real rhoMedHeat(quantity="Thermics.Density", displayUnit="kg/m³") = 1000
+  parameter Real rhoMedHeat(unit="kg/m3", quantity="Thermics.Density", displayUnit="kg/m3") = 1000
     if not LoadCalculation and Heat
     "Density of heating medium"
     annotation(Dialog(group="Heating Medium", tab="Heating System"));
@@ -784,77 +848,77 @@ public
     if not LoadCalculation and Heat
     "Heating system exponent (1.1: floor heating, 1.2-1.3: panel radiator, 1.25: ribbed radiator, 1.3: radiator, 1.25-1.45: convector)"
     annotation(Dialog(group="Heating System", tab="Heating System"));
-  parameter Real TFlowHeatNorm(quantity="Thermics.Temp", displayUnit="K") = 308.149
+  parameter Real TFlowHeatNorm(unit="K", quantity="Thermics.Temp", displayUnit="K") = 308.149
     if not LoadCalculation and Heat
     "Nominal heating flow temperature"
     annotation(                                                                     //45
                Dialog(group="Heating System", tab="Heating System"));
-  parameter Real TReturnHeatNorm(quantity="Thermics.Temp", displayUnit="K") = 301.149
+  parameter Real TReturnHeatNorm(unit="K", quantity="Thermics.Temp", displayUnit="K") = 301.149
     if not LoadCalculation and Heat
     "Nominal heating return temperature"
     annotation(                                                                       //25
                Dialog(group="Heating System", tab="Heating System"));
-  parameter Real TZoneNorm(quantity="Thermics.Temp", displayUnit="K") = 293.149
+  parameter Real TZoneNorm(unit="K", quantity="Thermics.Temp", displayUnit="K") = 293.149
     if not LoadCalculation and Heat
     "Nominal zone temperature"
     annotation(Dialog(group="Heating System", tab="Heating System"));
-  parameter Real QHeatNorm(quantity="Thermics.HeatFlowSurf", displayUnit="W/m²") = 50
+  parameter Real QHeatNorm(unit="W/m2", quantity="Thermics.HeatFlowSurf", displayUnit="W/m2") = 50
     if not LoadCalculation and Heat
     "Nominal heat load per floor area"
     annotation(Dialog(group="Heating System Dimensions", tab="Heating System"));
-  parameter Real VHeatMedium(quantity="Geometry.Volume", displayUnit="l") = 0.10000000000000001
+  parameter Real VHeatMedium(unit="m3", quantity="Geometry.Volume", displayUnit="m3") = 0.10000000000000001
     if not LoadCalculation and Heat
     "Volume of heating system"
     annotation(Dialog(group="Heating System Dimensions", tab="Heating System"));
-  parameter Real QBody(quantity="Basics.Power", displayUnit="W") = 80
+  parameter Real QBody(unit="W", quantity="Basics.Power", displayUnit="W") = 80
     "Body heat dissipation per person"
     annotation(Dialog(group="Inner Yields", tab="Heat Yields and Losses"));
-  parameter Real QPersonColdWater(quantity="Basics.Power", displayUnit="W") = -30
+  parameter Real QPersonColdWater(unit="W", quantity="Basics.Power", displayUnit="W") = -30
     "Individual losses by cold water use"
     annotation(Dialog(group="Inner Yields", tab="Heat Yields and Losses"));
-  parameter Real QPersonElectricity(quantity="Basics.Power", displayUnit="W") = 60
+  parameter Real QPersonElectricity(unit="W", quantity="Basics.Power", displayUnit="W") = 60
     "Electric equipment use per person"
     annotation(Dialog(group="Inner Yields", tab="Heat Yields and Losses"));
-  parameter Real LAirLeak(quantity="Basics.Gradient", displayUnit="1/h") = 0.0001389
+  parameter Real LAirLeak(unit="1/s", quantity="Basics.Gradient", displayUnit="1/h") = 0.0001389
     "Infiltration air leakage"
     annotation(Dialog(group="Ventilation Losses", tab="Heat Yields and Losses"));
-  parameter Real LComfortVentilation(quantity="Thermics.VolumeFlow", displayUnit="m³/h") = 0.0069444444444444441
+  parameter Real LComfortVentilation(unit="m3/s", quantity="Thermics.VolumeFlow", displayUnit="m3/h") = 0.0069444444444444441
     "Ventilation air flow"
     annotation(Dialog(group="Ventilation Losses", tab="Heat Yields and Losses"));
   parameter Boolean useVentilationSystem = false
     "If true, use mechanical ventilation"
     annotation(Dialog(group="Ventilation System", tab="Heat Yields and Losses"));
-  parameter Real VentilationHeatExchangeRate(quantity="Basics.RelMagnitude", displayUnit="%") = 0.70000000000000007
+  parameter Real VentilationHeatExchangeRate(unit="1", quantity="Basics.RelMagnitude", displayUnit="1") = 0.70000000000000007
     "Heat recovery efficiency of ventilation"
     annotation(Dialog(group="Ventilation System", tab="Heat Yields and Losses"));
-  parameter Real VentPower(quantity="Basics.Power", displayUnit="W") = 1500
+  parameter Real VentPower(unit="W", quantity="Basics.Power", displayUnit="W") = 1500
     "Ventilation power"
     annotation( Dialog(group="Ventilation System", tab="Heat Yields and Losses"));
   parameter Real cosPhiVent=0.7
     "Power factor of ventilation system"
     annotation(Dialog(group="Ventilation System",tab="Heat Yields and Losses"));
-  parameter Real uHeatBridge(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)") = 0.05
+  parameter Real uHeatBridge(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)") = 0.05
     "Equivalent additional U-value for thermal bridges"
     annotation(Dialog(group="Heat Bridge Losses", tab="Heat Yields and Losses"));
-  parameter Real VMass1(quantity="Geometry.Volume", displayUnit="m³") = 6
+  parameter Real VMass1(unit="m3", quantity="Geometry.Volume", displayUnit="m3") = 6
     "Inner thermal mass volume 1"
     annotation(Dialog(group="Inner Mass 1", tab="Inner Masses"));
-  parameter Real cpMass1(quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg·K)") = 920
+  parameter Real cpMass1(unit="J/(kg.K)", quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg.K)") = 920
     "Specific heat capacity of mass 1"
     annotation(Dialog(group="Inner Mass 1", tab="Inner Masses"));
-  parameter Real rhoMass1(quantity="Thermics.Density", displayUnit="kg/m³") = 1800
+  parameter Real rhoMass1(unit="kg/m3", quantity="Thermics.Density", displayUnit="kg/m3") = 1800
     "Density of inner mass 1"
     annotation(Dialog(group="Inner Mass 1", tab="Inner Masses"));
-  parameter Real VMass2(quantity="Geometry.Volume", displayUnit="m³") = 6
+  parameter Real VMass2(unit="m3", quantity="Geometry.Volume", displayUnit="m3") = 6
     "Inner thermal mass volume 1"
     annotation(Dialog(group="Inner Mass 1", tab="Inner Masses"));
-  parameter Real cpMass2(quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg·K)") = 920
+  parameter Real cpMass2(unit="J/(kg.K)", quantity="Thermics.SpecHeatCapacity", displayUnit="kJ/(kg.K)") = 920
     "Specific heat capacity of mass 1"
     annotation(Dialog(group="Inner Mass 1", tab="Inner Masses"));
-  parameter Real rhoMass2(quantity="Thermics.Density", displayUnit="kg/m³") = 1800
+  parameter Real rhoMass2(unit="kg/m3", quantity="Thermics.Density", displayUnit="kg/m3") = 1800
     "Density of inner mass 1"
     annotation(Dialog(group="Inner Mass 1", tab="Inner Masses"));
-  parameter Real infiltrationRate(unit="1/h") = 0.5
+  parameter Real infiltrationRate(unit="1/s") = 0.5
     "Air change rate for infiltration";
   parameter Modelica.Units.SI.HeatFlowRate occupancyLoad = 0
     "Heat gains from occupants";
@@ -986,24 +1050,24 @@ end diffAngle;
 public
 
 model Boundary "Properties of a boundary V1.0"
-  parameter Real ABound(quantity="Geometry.Area", displayUnit="m²")
+  parameter Real ABound(unit="m2", quantity="Geometry.Area", displayUnit="m2")
     "Surface area";
-  parameter Real AWindow(quantity="Geometry.Area", displayUnit="m²")
+  parameter Real AWindow(unit="m2", quantity="Geometry.Area", displayUnit="m2")
     "Window surface area";
-  parameter Real AOthers(quantity="Geometry.Area", displayUnit="m²")
+  parameter Real AOthers(unit="m2", quantity="Geometry.Area", displayUnit="m2")
     "Other surfaces (e.g. doors)";
-  parameter Real rhoBound(quantity="Thermodynamics.Density", displayUnit="kg/m³")
+  parameter Real rhoBound(unit="kg/m3", quantity="Thermodynamics.Density", displayUnit="kg/m3")
     "Density of boundary";
-  parameter Real cpBound(quantity="Thermodynamics.SpecHeatCapacity", displayUnit="kJ/(kg·K)")
+  parameter Real cpBound(unit="J/(kg.K)", quantity="Thermodynamics.SpecHeatCapacity", displayUnit="kJ/(kg.K)")
     "Specific heat capacity of boundary";
-  parameter Real dBound(quantity="Geometry.Length", displayUnit="m")
+  parameter Real dBound(unit="m", quantity="Geometry.Length", displayUnit="m")
     "Thickness of boundary";
   parameter Real gWindow "Total energy translucency of window";
-  parameter Real uBound(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)")
+  parameter Real uBound(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)")
     "Heat transmission value of boundary";
-  parameter Real uWindow(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)")
+  parameter Real uWindow(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)")
     "Heat transmission value of window";
-  parameter Real uOthers(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)")
+  parameter Real uOthers(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)")
     "Heat transmission value of other surfaces";
   parameter Real epsDirt "Dirt correction value for window";
   parameter Real epsShading "Shading correction value for window";
@@ -1012,131 +1076,95 @@ model Boundary "Properties of a boundary V1.0"
   parameter Real alphaInc "Inclination angle of boundary";
   parameter Real alphaOr  "Orientation angle of boundary";
   parameter Real alphaBound "Absorption coefficient of boundary";
-  parameter Real alphaBoundOut(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)")
+  parameter Real alphaBoundOut(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)")
     "Outer heat transmission coefficient of boundary";
-  parameter Real alphaBoundIn(quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m²·K)")
+  parameter Real alphaBoundIn(unit="W/(m2.K)", quantity="Thermics.HeatTransmCoeff", displayUnit="W/(m2.K)")
     "Inner heat transmission coefficient of boundary";
-  parameter Real depthBound(quantity="Geometry.Length", displayUnit="m")
+  parameter Real depthBound(unit="m", quantity="Geometry.Length", displayUnit="m")
     "Depth of boundary, if it is ground connected";
   parameter Integer contactBound
     "Boundary is connected to: '0' - ambience, 1,2,3 ... - Zone 1,2,3";
-  /* // 17 Dec 11.00   // 17 Dec 10.00 added 5 statements ------------------------------------------------------------------
-  // Exposed boundary results (filled by parent model HeatedZone_1)
-  // These are NOT parameters and NOT outputs: parent assigns them by equations.
-  // ------------------------------------------------------------------
-  Real TBoundIn(
-    quantity="Thermics.Temp",
-    displayUnit="°C",
-    start=293.15)
-    "Inner surface temperature of boundary"
-    annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
 
-  Real TBoundOut(
-    quantity="Thermics.Temp",
-    displayUnit="°C",
-    start=283.15)
-    "Outer surface temperature of boundary"
-    annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
-
-  Real QBoundIn(
-    quantity="Basics.Power",
-    displayUnit="kW")
-    "Inner heat losses/gains due to boundary (W internally)"
-    annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
-      tab="Results 2", __esi_showAs=ShowAs.Result));
-
-  Real QBoundOut(
-    quantity="Basics.Power",
-    displayUnit="kW")
-    "Outer heat losses/gains due to boundary (W internally)"
-    annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
-      tab="Results 2", __esi_showAs=ShowAs.Result));
-
-  Real QBoundChange(
-    quantity="Basics.Power",
-    displayUnit="kW")
-    "Heat exchanged through boundary (W internally)"
-    annotation(Dialog(group="Walls and other boundaries - Heating and Cooling",
-      tab="Results 2", __esi_showAs=ShowAs.Result));
-*/
-    /* 16 Dec 10.00
-    // 15 Dec 14.00 removed input
-    // 14 Dec 22.00 - ACTIVE TBoundIn/TBoundOut declarations
-    Real TBoundIn(
-      quantity="Thermics.Temp",
-      displayUnit="°C",
-      start=293.15)
-      "Inner surface temperature of boundary";
-
-    Real TBoundOut(
-      quantity="Thermics.Temp",
-      displayUnit="°C",
-      start=283.15)
-      "Outer surface temperature of boundary";
-*/
-    /*    
-    // 13 Dec 21.00 added
-    Real TBoundIn(
-      quantity="Thermics.Temp",
-      displayUnit="°C")
-      "Average inner boundary temperature (set by parent model)";
-
-    Real TBoundOut(
-      quantity="Thermics.Temp",
-      displayUnit="°C")
-      "Average outer boundary temperature (set by parent model)";
-    */
-    /* 14 Dec 21.00 commented
-     // 13 Dec 17.00 commented
-    // 13 Dec 16.00 added
-    Real TBoundIn(
-      quantity="Thermics.Temp",
-      displayUnit="°C",
-      start=293.15)
-      "Inner surface temperature of boundary";
-
-    Real TBoundOut(
-      quantity="Thermics.Temp",
-      displayUnit="°C",
-      start=283.15)
-      "Outer surface temperature of boundary";
-*/
-    /* // 13 Dec 12.00
-    // 10 Dec 17.00
-    Real TBoundIn(
-      quantity="Thermics.Temp",
-      displayUnit="°C")
-      "Average inner boundary temperature (placeholder, not used in equations)";
-
-    Real TBoundOut(
-      quantity="Thermics.Temp",
-      displayUnit="°C")
-      "Average outer boundary temperature (placeholder, not used in equations)";
-  */
-  // 17 Dec 14.00
   parameter Modelica.Units.SI.Temperature TGround = 283.15
     "Ground temperature if boundary is ground-connected";
-  /* // 17 Dec 14.00
-  Real TGround( // 17 Dec 10.00 parameter to Real TGround
-    quantity="Thermics.Temp",
-    displayUnit="°C",
-    start=283.15)
-  "Ground temperature, if boundary is ground connected (placeholder)";
-  */
-    /* // 10 Dec 12.00
-    Real TBoundIn(quantity="Thermics.Temp", displayUnit="°C")
-      "Average inner boundary temperature";
-    Real TBoundOut(quantity="Thermics.Temp", displayUnit="°C")
-      "Average outer boundary temperature";
-    Real TGround(quantity="Thermics.Temp", displayUnit="°C")
-      "Ground temperature, if boundary is ground connected";
-*/
-  parameter Real lambdaBound(quantity="Thermics.SpecHeatCond", displayUnit="W/(m·K)")
+
+  parameter Real lambdaBound(unit="W/(m.K)", quantity="Thermics.SpecHeatCond", displayUnit="W/(m.K)")
     "Heat conductance of boundary";
   parameter Boolean groundContact
     "Boundary ground contact enabled/disabled";
 
-  annotation(Icon(coordinateSystem(extent={{-100,50},{100,-50}})));
+  annotation(
+    Icon(
+      coordinateSystem(extent={{-100,-100},{100,100}}, preserveAspectRatio=true),
+      graphics={
+        Rectangle(
+          extent={{-90,90},{90,-90}},
+          lineColor={95,95,95},
+          fillColor={215,215,215},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-80,80},{80,-80}},
+          lineColor={135,135,135},
+          fillColor={240,240,240},
+          fillPattern=FillPattern.Solid),
+        Rectangle(
+          extent={{-50,50},{50,-50}},
+          lineColor={0,0,255},
+          fillColor={170,213,255},
+          fillPattern=FillPattern.Solid),
+        Line(
+          points={{0,50},{0,-50}},
+          color={64,64,64},
+          thickness=1),
+        Line(
+          points={{-50,0},{50,0}},
+          color={64,64,64},
+          thickness=1),
+        Polygon(
+          points={{-100,10},{-90,0},{-100,-10},{-100,10}},
+          lineColor={238,46,47},
+          fillColor={238,46,47},
+          fillPattern=FillPattern.Solid),
+        Line(
+          points={{-100,0},{-90,0}},
+          color={238,46,47},
+          thickness=1),
+        Polygon(
+          points={{100,10},{90,0},{100,-10},{100,10}},
+          lineColor={238,46,47},
+          fillColor={238,46,47},
+          fillPattern=FillPattern.Solid),
+        Line(
+          points={{90,0},{100,0}},
+          color={238,46,47},
+          thickness=1),
+        Text(
+          extent={{-60,70},{60,55}},
+          textString="WALL",
+          textColor={0,0,0},
+          textStyle={TextStyle.Bold}),
+        Text(
+          extent={{-100,110},{100,150}},
+          textString="%name",
+          textColor={0,0,255})}
+        // Outer wall rectangle (main structure)
+
+        // Inner wall layer (showing thickness)
+
+        // Window representation
+
+        // Window frame (vertical)
+
+        // Window frame (horizontal)
+
+        // Heat flow arrow (left side - incoming)
+
+        // Heat flow arrow (right side - outgoing)
+
+        // Text label showing it's a wall/boundary
+
+        // Component name
+));
 end Boundary;
 
 
@@ -1144,17 +1172,17 @@ end Boundary;
   // part 6
 public
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow internalGains
-    annotation (Placement(transformation(extent={{-84,-6},{-64,16}})));
+    annotation (Placement(transformation(extent={{-60,-40},{-40,-18}})));
 
   Modelica.Blocks.Sources.RealExpression TInSig[Bound](each y=TZoneAct)
-    annotation (Placement(transformation(extent={{-42,70},{-22,90}})));
+    annotation (Placement(transformation(extent={{-32,-108},{-2,-80}})));
 
   Modelica.Blocks.Sources.RealExpression ToutSig(y = 273.15 + T_outside.y)
-    annotation (Placement(transformation(extent={{-98,-52},{-78,-32}})));
+    annotation (Placement(transformation(extent={{42,-36},{62,-16}})));
 
   Modelica.Thermal.HeatTransfer.Sources.PrescribedTemperature TOutSrc
     "Outdoor temperature for infiltration"
-    annotation (Placement(transformation(extent={{-54,-48},{-34,-28}})));
+    annotation (Placement(transformation(extent={{20,-100},{40,-80}})));
 
 
 
@@ -1165,12 +1193,14 @@ public
 
 
   Modelica.Thermal.HeatTransfer.Sensors.TemperatureSensor senTZone
-    annotation (Placement(transformation(extent={{-140,-32},{-120,-12}})));
+    annotation (Placement(transformation(extent={{-10,-10},{10,10}},
+        rotation=180,
+        origin={-94,-10})));
 
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow QIntRad
-    annotation (Placement(transformation(extent={{-50,14},{-30,34}})));
+    annotation (Placement(transformation(extent={{-62,16},{-42,36}})));
   Modelica.Thermal.HeatTransfer.Sensors.HeatFlowSensor HVAC
-    annotation (Placement(transformation(extent={{152,14},{172,34}})));
+    annotation (Placement(transformation(extent={{-12,32},{8,52}})));
   // ============================================================================
   // VARIABLE INTERNAL GAINS INPUTS (28 Dec - CORRECTED)
   // ============================================================================
@@ -1179,24 +1209,38 @@ public
     annotation (Placement(transformation(
         extent={{-14,-14},{14,14}},
         rotation=180,
-        origin={166,60})));
+        origin={114,62}), iconTransformation(
+        extent={{-14,-14},{14,14}},
+        rotation=180,
+        origin={114,62})));
 
   Modelica.Blocks.Interfaces.RealInput P_appliances_W(start=50)
     "Appliance power [W]"
-    annotation (Placement(transformation(extent={{-168,42},{-140,70}}),
-        iconTransformation(extent={{-168,42},{-140,70}})));
+    annotation (Placement(transformation(extent={{-128,50},{-100,78}}),
+        iconTransformation(extent={{-128,50},{-100,78}})));
 
   Modelica.Blocks.Interfaces.RealInput Q_radiation_W(start=0)
     "Internal radiative heat gain [W]"
-    annotation (Placement(transformation(extent={{-170,-70},{-142,-42}}),
-        iconTransformation(extent={{-170,-70},{-142,-42}})));
+    annotation (Placement(transformation(extent={{-126,-66},{-98,-38}}),
+        iconTransformation(extent={{-126,-66},{-98,-38}})));
+
+  Modelica.Blocks.Interfaces.RealInput solRadIn[fourElements.nOrientations]
+    "Solar radiation through windows per orientation [W/m2]"
+    annotation (Placement(transformation(
+        extent={{-14,-14},{14,14}},
+        rotation=90,
+        origin={0,-110}),
+        iconTransformation(
+        extent={{-14,-14},{14,14}},
+        rotation=90,
+        origin={0,-110})));
 
   Modelica.Blocks.Math.Gain occGain_conv(k=80)
     "Convert number of persons to heat [W] (80W per person)"
     annotation (Placement(transformation(
         extent={{-7,-7},{7,7}},
         rotation=180,
-        origin={129,59})));
+        origin={81,63})));
 
 initial equation
 
@@ -1447,20 +1491,22 @@ end for;
   // HEAT PORT CONNECTIONS (Thermal)
   // -------------------------------------------------------------------------
   // 1. Appliance load connected to internal convective gains
-  connect(fourElements.intGainsConv, appLoad.port) annotation (Line(points={{28,4},{
-          34,4},{34,64},{10,64}},      color={191,0,0}));
+  connect(fourElements.intGainsConv, appLoad.port) annotation (Line(points={{30,
+          7.66667},{34,7.66667},{34,42},{12,42},{12,64},{-44,64}},
+                                       color={191,0,0}));
 
   // 2. Occupant load connected to internal convective gains
-  connect(fourElements.intGainsConv, occLoad.port) annotation (Line(points={{28,4},{
-          34,4},{34,18},{56,18},{56,76},{80,76},{80,66}},     color={191,0,0}));
+  connect(fourElements.intGainsConv, occLoad.port) annotation (Line(points={{30,
+          7.66667},{34,7.66667},{34,64},{46,64}},             color={191,0,0}));
 
   // 3. Internal gains heat port connected to convective gains
   connect(internalGains.port, fourElements.intGainsConv) annotation (Line(
-        points={{-64,5},{-26,5},{-26,24},{34,24},{34,4},{28,4}}, color={191,0,0}));
+        points={{-40,-29},{-36,-29},{-36,-30},{34,-30},{34,7.66667},{30,7.66667}},
+                                                                 color={191,0,0}));
 
   // 4. Infiltration loss port_a connected to internal convective gains
   connect(infiltrationLoss.port_a, fourElements.intGainsConv) annotation (Line(
-        points={{54,3},{42,3},{42,4},{28,4}},     color={191,0,0}));
+        points={{44,3},{44,7.66667},{30,7.66667}},color={191,0,0}));
 
   // 5. External temperature source connected to infiltration loss port_b
 
@@ -1476,8 +1522,11 @@ end for;
   connect(zeroLight.y, LightLoad.u[1]);
   connect(zeroInner.y, InnerLoad.u[1]);
 
-  // 8. Zero solar radiation connected to fourElements
-  connect(zeroSolRad.y, fourElements.solRad);
+  // 8. Solar radiation input connected to fourElements
+  connect(solRadIn, fourElements.solRad)
+    annotation (Line(points={{0,-110},{0,-92},{-40,-92},{-40,18},{-33.2917,18},{
+          -33.2917,20.5}},
+                     color={0,0,127}));
 
 
   // 10. Occupant load Q_flow from constant
@@ -1485,35 +1534,43 @@ end for;
   // 11. Appliance load Q_flow from constant
 
   // 12. Infiltration air temperature from outside temperature signal
-  connect(T_infiltration_air.T, ToutSig.y) annotation (Line(points={{90,0},{90,-58},
-          {-78,-58},{-78,-42},{-77,-42}}, color={0,0,127}));
+  connect(T_infiltration_air.T, ToutSig.y) annotation (Line(points={{76,-8},{76,
+          -26},{63,-26}},                 color={0,0,127}));
 
 
 
-  connect(senTZone.port, fourElements.intGainsConv) annotation (Line(points={{-140,
-          -22},{-146,-22},{-146,-4},{-106,-4},{-106,-12},{-26,-12},{-26,24},{34,
-          24},{34,4},{28,4}}, color={191,0,0}));
+  connect(senTZone.port, fourElements.intGainsConv) annotation (Line(points={{-84,-10},
+          {-34,-10},{-34,-30},{38,-30},{38,7.66667},{30,7.66667}},
+                              color={191,0,0}));
 
   connect(T_infiltration_air.port, infiltrationLoss.port_b) annotation (Line(
-        points={{112,0},{118,0},{118,16},{80,16},{80,3},{72,3}},     color={191,
+        points={{98,-8},{100,-8},{100,8},{62,8},{62,3}},             color={191,
           0,0}));
 
 
-  connect(QIntRad.port, fourElements.intGainsRad) annotation (Line(points={{-30,
-          24},{-24,24},{-24,26},{36,26},{36,8},{28,8}}, color={191,0,0}));
+  connect(QIntRad.port, fourElements.intGainsRad) annotation (Line(points={{-42,26},
+          {36,26},{36,12.3333},{30,12.3333}},           color={191,0,0}));
 
-  connect(HVAC.port_b, fourElements.intGainsConv) annotation (Line(points={{172,
-          24},{172,84},{30,84},{30,44},{34,44},{34,4},{28,4}}, color={191,0,0}));
+  connect(HVAC.port_b, fourElements.intGainsConv) annotation (Line(points={{8,42},{
+          34,42},{34,7.66667},{30,7.66667}},                   color={191,0,0}));
 
 
   // ============================================================================
   // VARIABLE INTERNAL GAINS CONNECTIONS (28 Dec - CORRECTED)
   // ============================================================================
-  connect(nPersons, occGain_conv.u);
-  connect(occGain_conv.y, occLoad.Q_flow);
-  connect(P_appliances_W, appLoad.Q_flow);
-  connect(Q_radiation_W, QIntRad.Q_flow);
+  connect(nPersons, occGain_conv.u) annotation (Line(points={{114,62},{111.7,62},
+          {111.7,63},{89.4,63}},  color={0,0,127}));
+  connect(occGain_conv.y, occLoad.Q_flow) annotation (Line(points={{73.3,63},{
+          75.65,63},{75.65,64},{66,64}},
+                                   color={0,0,127}));
+  connect(P_appliances_W, appLoad.Q_flow)
+    annotation (Line(points={{-114,64},{-64,64}}, color={0,0,127}));
+  connect(Q_radiation_W, QIntRad.Q_flow)
+    annotation (Line(points={{-112,-52},{-112,26},{-62,26}}, color={0,0,127}));
+  connect(heatPort, HVAC.port_a) annotation (Line(points={{-106,42},{-12,42}},
+                                           color={191,0,0}));
 
-  connect(heatPort, HVAC.port_a) annotation (Line(points={{-106,42},{78,42},{78,
-          20},{146,20},{146,24},{152,24}}, color={191,0,0}));
+  connect(TZone, TZone)
+    annotation (Line(points={{-60,-100},{-60,-100}},
+                                                   color={0,0,127}));
 end HeatedZone;

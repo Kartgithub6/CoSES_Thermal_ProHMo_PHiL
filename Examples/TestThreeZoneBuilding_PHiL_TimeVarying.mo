@@ -1,4 +1,4 @@
-within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+within CoSES_Thermal_ProHMo_PHiL.Examples;
 model TestThreeZoneBuilding_PHiL_TimeVarying
   "Test model with TIME-VARYING occupancy and appliance schedules"
 
@@ -6,7 +6,7 @@ model TestThreeZoneBuilding_PHiL_TimeVarying
   // THE PHiL MODEL
   // ============================================================================
 
-  ThreeZoneBuilding_PHiL_basic building(
+  ThermoEnergeticAnalysis.ThreeZoneBuilding_PHiL_basic building(
     AZone_cellar=80,
     AZone_living=100,
     AZone_roof=60,

@@ -1,6 +1,6 @@
 within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
 model ThreeZoneBuilding_PHiL_basic
-  "PHiL wrapper for ThreeZoneBuilding - CoSES Lab Compatible - CORRECTED FLOW"
+  "PHiL wrapper for ThreeZoneBuilding - CoSES Lab Compatible - Corrected Flow"
 
   // ============================================================================
   // PHiL INPUT SIGNALS (from CoSES Lab)
@@ -83,8 +83,7 @@ model ThreeZoneBuilding_PHiL_basic
 
   replaceable package Medium = IBPSA.Media.Water
     constrainedby Modelica.Media.Interfaces.PartialMedium
-    annotation (choicesAllMatching=true); // 11 Jan 19.00 IBPSA.Media.Water // 25 Dec 08.00 Modelica.Media.Water.ConstantPropertyLiquidWater
-// 25 Dec 09.00 Modelica.Media.Water.StandardWater
+    annotation (choicesAllMatching=true);
 
   // ============================================================================
   // SYSTEM
@@ -98,8 +97,8 @@ model ThreeZoneBuilding_PHiL_basic
   // ============================================================================
   // FLUID BOUNDARIES - CORRECTED!
   // ============================================================================
-  // KEY FIX: Supply uses MassFlowSource_T to PUSH water INTO the building
-  //          Return uses Boundary_pT as pressure reference for water to EXIT
+  // KEY FIX: Supply uses MassFlowSource_T to PUSH water into the building
+  //          Return uses Boundary_pT as pressure reference for water to exit
   // ============================================================================
 
   // Supply boundary - PUSHES hot water at controlled temperature and flow rate
@@ -218,6 +217,7 @@ equation
   building.P_appliances_living_W = P_appliances_living_W_in;
   building.P_appliances_roof_W = P_appliances_roof_W_in;
 
+  // ============================================================================
   // INPUT UNIT CONVERSIONS
   // ============================================================================
 
@@ -271,7 +271,7 @@ equation
   T_roofIs_degC = building.TZone_roof - 273.15;
 
   // Return water temperature
-  STM_HCRL_Set_degC = TReturn.T - 273.15;  // 25 Dec 12.00 Already in degC, no conversion needed
+  STM_HCRL_Set_degC = TReturn.T - 273.15;
 
   // Volume flow setpoint - pass through input value
   SFW_HCRLbM_Set_l_per_min = SFW_HCRLbM_l_per_min;

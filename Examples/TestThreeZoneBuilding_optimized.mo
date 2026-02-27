@@ -1,4 +1,4 @@
-within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
+within CoSES_Thermal_ProHMo_PHiL.Examples;
 model TestThreeZoneBuilding_optimized
   "Test scenario using PHiL wrapper with opimized topology"
   extends Modelica.Icons.Example;
@@ -32,22 +32,55 @@ model TestThreeZoneBuilding_optimized
   // ═══════════════════════════════════════════════════════════════════
   // OUTPUT VARIABLES - For Easy Plotting
   // ═══════════════════════════════════════════════════════════════════
+  // Zone temperatures
+  Real T_living_degC = building.T_roomIs_degC "Living room temperature [°C]";
+  Real T_cellar_degC = building.T_cellarIs_degC "Cellar temperature [°C]";
+  Real T_roof_degC = building.T_roofIs_degC "Roof office temperature [°C]";
+
+  // System variables
+  Real T_return_degC = building.STM_HCRL_Set_degC "Return water temperature [°C]";
+  Real qv_lpm = building.SFW_HCRLbM_Set_l_per_min "Volume flow rate [L/min]";
+
+  // Valve positions
+  Real valve_living = building.valve_living_opening "Living zone valve [0-1]";
+  Real valve_cellar = building.valve_cellar_opening "Cellar zone valve [0-1]";
+  Real valve_roof = building.valve_roof_opening "Roof zone valve [0-1]";
+
+  // Heating powers
+  Real P_heating_living = building.P_heating_living_kW "Living zone power [kW]";
+  Real P_heating_cellar = building.P_heating_cellar_kW "Cellar zone power [kW]";
+  Real P_heating_roof = building.P_heating_roof_kW "Roof zone power [kW]";
+  Real P_total_kW = building.P_heating_total_kW "Total heating power [kW]";
+
+  // Control errors
+  Real error_living = 20.0 - T_living_degC "Living error [K]";
+  Real error_cellar = 18.0 - T_cellar_degC "Cellar error [K]";
+  Real error_roof = 20.0 - T_roof_degC "Roof error [K]";
+/*
   Real T_living_degC = building.T_roomIs_degC "Living room temperature [°C]";
   Real T_cellar_degC = building.T_cellarIs_degC "Cellar temperature [°C]";
   Real T_roof_degC = building.T_roofIs_degC "Roof office temperature [°C]";
   Real T_return_degC = building.STM_HCRL_Set_degC "Return water temperature [°C]";
   Real qv_lpm = building.SFW_HCRLbM_Set_l_per_min "Volume flow rate [L/min]";
-  Real valve_cellar = building.valve_cellar_opening "Cellar valve [0-1]";
-  Real valve_living = building.valve_living_opening "Living valve [0-1]";
-  Real valve_roof = building.valve_roof_opening "Roof valve [0-1]";
+  Real valve_living = ThreeZoneBuilding_PHiL_optimized.valve_living_open "Living zone valve [0-1]";
+  Real valve_cellar = ThreeZoneBuilding_PHiL_optimized.valve_cellar_open "Cellar zone valve [0-1]";
+  Real valve_roof = ThreeZoneBuilding_PHiL_optimized.valve_roof_open "Roof zonevalve [0-1]";
+  Real P_heating_living = ThreeZoneBuilding_PHiL_optimized.P_heating_living_kW "Living zone power [kW]";
+  Real P_heating_cellar = ThreeZoneBuilding_PHiL_optimized.P_heating_cellar_kW "Cellar zone power [kW]";
+  Real P_heating_roof = ThreeZoneBuilding_PHiL_optimized.P_heating_roof_kW "Roof zone power [kW]";
+
+
+//  Real valve_cellar = building.valve_cellar_opening "Cellar valve [0-1]";
+//  Real valve_living = building.valve_living_opening "Living valve [0-1]";
+//  Real valve_roof = building.valve_roof_opening "Roof valve [0-1]";
   Real error_living = 20.0 - T_living_degC "Living error [K]";
   Real error_cellar = 18.0 - T_cellar_degC "Cellar error [K]";
   Real error_roof = 20.0 - T_roof_degC "Roof error [K]";
-  Real P_heating_living_kW = valve_living * 3.5 "Living power [kW]";
-  Real P_heating_cellar_kW = valve_cellar * 2.5 "Cellar power [kW]";
-  Real P_heating_roof_kW = valve_roof * 2.5 "Roof power [kW]";
-  Real P_total_kW = P_heating_living_kW + P_heating_cellar_kW + P_heating_roof_kW "Total power [kW]";
-
+//  Real P_heating_living_kW = valve_living * 3.5 "Living power [kW]";
+//  Real P_heating_cellar_kW = valve_cellar * 2.5 "Cellar power [kW]";
+//  Real P_heating_roof_kW = valve_roof * 2.5 "Roof power [kW]";
+  Real P_total_kW = ThreeZoneBuilding_PHiL_optimized.P_heating_total_kW "Total power [kW]";
+*/
   // ═══════════════════════════════════════════════════════════════════
   // SUPPLY CONDITIONS - What the boiler/heat source provides
   // ═══════════════════════════════════════════════════════════════════
@@ -238,12 +271,14 @@ equation
 
   connect(appliances_roof.y[1], building.P_appliances_roof_W_in)
     annotation(Line(points={{139,-90},{110,-90},{110,-56},{66,-56}}, color={0,0,127}));
-
   annotation(
-    experiment(StartTime=0, StopTime=86400, Interval=60, Tolerance=1e-6),
-    __Dymola_experimentSetupOutput(events=false),
-    Diagram(coordinateSystem(extent={{-200,-150},{200,100}})),
-    Icon(coordinateSystem(extent={{-200,-150},{200,100}})),
+    Icon(coordinateSystem(preserveAspectRatio=false, extent={{-200,-200},{200,200}})),
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-200,-200},{200,200}})),
+    experiment(
+      StopTime=86400,
+      Interval=60,
+      Tolerance=1e-06,
+      __Dymola_Algorithm="Dassl"),
     Documentation(info="<html>
 <h4>TestThreeZoneBuilding_optimized</h4>
 

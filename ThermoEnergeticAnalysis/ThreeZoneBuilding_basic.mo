@@ -10,7 +10,7 @@ model ThreeZoneBuilding_basic
 
   replaceable package Medium = IBPSA.Media.Water
     constrainedby Modelica.Media.Interfaces.PartialMedium
-    annotation (choicesAllMatching=true); // 11 jan 19.00 IBPSA.Media.Water // 25 Dec 09.00 Modelica.Media.Water.StandardWater // Modelica.Media.Water.ConstantPropertyLiquidWater
+    annotation (choicesAllMatching=true);
 
   // ============================================================================
   // EXTERNAL CONNECTORS
@@ -149,7 +149,7 @@ model ThreeZoneBuilding_basic
     annotation (Placement(transformation(extent={{-150,-110},{-170,-90}})));
 
   // ============================================================================
-  // HYDRONIC SYSTEMS (Water-to-HeatPort converters)
+  // HYDRONIC SYSTEMS (Water to HeatPort converters)
   // ============================================================================
 
   HydronicSystem.SystemWithZoneAndHydronics cellar_hydSys(
@@ -224,7 +224,7 @@ model ThreeZoneBuilding_basic
     annotation (Placement(transformation(extent={{140,-60},{160,-40}})));
 
   // ============================================================================
-  // WINDOW SHADING (constant zero = no shading)
+  // WINDOW SHADING (constant zero - no shading)
   // ============================================================================
 
   Modelica.Blocks.Sources.Constant WindowShadingConst_cellar[3](each k=0)
@@ -450,13 +450,13 @@ equation
   // ============================================================================
 
   connect(cellar_zone.TZone, TZone_cellar)
-    annotation (Line(points={{72,89.6},{180,89.6},{180,140},{210,140}},      color={0,0,127}));
+    annotation (Line(points={{68,90},{180,90},{180,140},{210,140}},          color={0,0,127}));
 
   connect(living_zone.TZone, TZone_living)
-    annotation (Line(points={{72,-10.4},{180,-10.4},{180,40},{210,40}},  color={0,0,127}));
+    annotation (Line(points={{68,-10},{180,-10},{180,40},{210,40}},      color={0,0,127}));
 
   connect(roof_zone.TZone, TZone_roof)
-    annotation (Line(points={{72,-110.4},{180,-110.4},{180,-60},{210,-60}},  color={0,0,127}));
+    annotation (Line(points={{68,-110},{180,-110},{180,-60},{210,-60}},      color={0,0,127}));
 
   // ============================================================================
   // VOLUME FLOW SUM (approximation based on valve opening)
