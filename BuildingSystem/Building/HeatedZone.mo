@@ -143,10 +143,9 @@ public
 )   "Boundary model"
     annotation(Placement(transformation(extent={{-34,-66},{-6,-38}})));
 
-  // ------------------------------------------------------------------
+  // ============================================================================
   // Boundary result variables needed by equations later in the model
-  // (must be declared here so they exist when used)
-  // ------------------------------------------------------------------
+  // ============================================================================
   Real TBoundIn[Bound](each start=293.15, unit="K", quantity="Thermics.Temp", displayUnit="degC")
     "Inner temperature of boundary"
     annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
@@ -173,7 +172,7 @@ public
     "Ground temperature for ground-contact boundaries"
     annotation(Dialog(group="Temperature", tab="Results 1", __esi_showAs=ShowAs.Result));
 
-  // part 2
+  // Zone Declaration
 public
   parameter Integer NumberZones = 3 "Number of Zones"
     annotation(Dialog(group="Zones", tab="Model Initialization"));
@@ -473,7 +472,7 @@ public
   parameter Real kTZoneRef = 1e-9
   "Very small weight for TZoneRef in dynamic mode (to keep connector used)";
 
-  // part 3
+  // File path
 public
   parameter String DINFile =
     "C:/Users/Public/Documents/SimulationX 4.6/Modelica/GreenCity/Data/ModelData/building/DIN_factors/DIN_factors.txt";
@@ -1047,8 +1046,8 @@ algorithm
   angle := acos(minMax);
   annotation(Impure=false);
 end diffAngle;
-public
 
+public
 model Boundary "Properties of a boundary V1.0"
   parameter Real ABound(unit="m2", quantity="Geometry.Area", displayUnit="m2")
     "Surface area";
@@ -1169,7 +1168,6 @@ end Boundary;
 
 
 
-  // part 6
 public
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow internalGains
     annotation (Placement(transformation(extent={{-60,-40},{-40,-18}})));
@@ -1185,8 +1183,9 @@ public
     annotation (Placement(transformation(extent={{20,-100},{40,-80}})));
 
 
-
-  // ******************heatPort exists, but is NOT connected internally***********************
+  // ============================================================================
+  // heatPort exists, but is NOT connected internally
+  // ============================================================================
   Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a heatPort
     "Thermal port to connect hydronic system to the zone"
     annotation (Placement(transformation(extent={{-116,32},{-96,52}})));
@@ -1300,7 +1299,7 @@ equation
   QAirComfort = 0;
   QBase = 0;
   QHeatCoolLoad = -HVAC.Q_flow;
-QInner = 0;
+  QInner = 0;
   QLAirLeak = 0;
   QLight = 0;
   QMachine = 0;
@@ -1311,7 +1310,7 @@ QInner = 0;
   qvHeat = 0;
   TFlowHeat = 0;
   TReturnHeat = 0;
-  TOutSrc.T = ToutSig.y;  // Still needed since connect(ToutSig.y, TOutSrc.T) is commented out
+  TOutSrc.T = ToutSig.y;  // Still needed since I commented out connect(ToutSig.y, TOutSrc.T)
 
 
   // Add equation for TZoneAct - it was never assigned!
@@ -1321,9 +1320,9 @@ QInner = 0;
   TZone = fourElements.TAir;
   ZoneTemperatures = fill(TZone, NumberZones);
 
-  // ---------------------------------------------------------
+  // ============================================================================
   // 1. Compute deltaTBound[i]
-  // ---------------------------------------------------------
+  // ============================================================================
   for i in 1:Bound loop
     if (Boundaries[i].contactBound > 0 or Boundaries[i].groundContact) then
       if (Boundaries[i].lambdaBound > 1e-10) then
@@ -1360,10 +1359,10 @@ end for;
   end if;
 
 
-/* --------------------------------------------------------------
-   OLD SIMX HEAT-TRANSFER LOOP — DISABLED FOR PHIL VERSION
---------------------------------------------------------------  
-*/
+  // ============================================================================
+  // OLD SIMX HEAT-TRANSFER LOOP — DISABLED FOR PHIL VERSION
+  // ============================================================================
+
 for i in (1:Bound) loop
   AngleBound[i] = angleMinMax(
     diffAngle(EnvironmentConditions.RadiationVector, Boundaries[i].NormalVector),
@@ -1414,7 +1413,7 @@ for i in (1:Bound) loop
     (Boundaries[i].ABound - Boundaries[i].AWindow - Boundaries[i].AOthers) *
     (TZoneAct - TAmbientBound[i]);
 
-  // --- Heat transfer through boundary (ALWAYS defined) ---
+  // Heat transfer through boundary
   if Boundaries[i].dBound > 0.001 then
     QBoundChange[i] =
       -Boundaries[i].lambdaBound / Boundaries[i].dBound *
@@ -1424,7 +1423,7 @@ for i in (1:Bound) loop
     QBoundChange[i] = 0;
   end if;
 
-  // --- Outer boundary heat flow
+  // Outer boundary heat flow
   if Boundaries[i].groundContact then
     QBoundOut[i] = QBoundChange[i];
   else
@@ -1450,7 +1449,7 @@ for i in (1:Bound) loop
 
 end for;
 
-// --- DYNAMIC OR MASSLESS BOUNDARY TEMPERATURES ---
+// DYNAMIC OR MASSLESS BOUNDARY TEMPERATURES
 for i in 1:Bound loop
   if Boundaries[i].dBound > 1e-3 then
     // Dynamic internal node
@@ -1483,17 +1482,15 @@ for i in 1:Bound loop
   end if;
 end for;
 
-// ============================================================================
-// HeatedZone.mo - COMPLETE ACTIVE CONNECT STATEMENTS SECTION
-// ============================================================================
+  // ============================================================================
+  // HeatedZone.mo - COMPLETE ACTIVE CONNECT STATEMENTS SECTION
+  // ============================================================================
 
-  // -------------------------------------------------------------------------
   // HEAT PORT CONNECTIONS (Thermal)
-  // -------------------------------------------------------------------------
   // 1. Appliance load connected to internal convective gains
   connect(fourElements.intGainsConv, appLoad.port) annotation (Line(points={{30,
           7.66667},{34,7.66667},{34,42},{12,42},{12,64},{-44,64}},
-                                       color={191,0,0}));
+    color={191,0,0}));
 
   // 2. Occupant load connected to internal convective gains
   connect(fourElements.intGainsConv, occLoad.port) annotation (Line(points={{30,
@@ -1508,13 +1505,7 @@ end for;
   connect(infiltrationLoss.port_a, fourElements.intGainsConv) annotation (Line(
         points={{44,3},{44,7.66667},{30,7.66667}},color={191,0,0}));
 
-  // 5. External temperature source connected to infiltration loss port_b
-
-  // -------------------------------------------------------------------------
-  // SIGNAL CONNECTIONS (Real values)
-  // -------------------------------------------------------------------------
-
-  // 7. Zero constants connected to load inputs (no annotations - simple connections)
+  // 5. Zero constants connected to load inputs (no annotations - simple connections)
   connect(zeroNP.y, NumberPerson.u[1]);
   connect(zeroBase.y, BaseLoad.u[1]);
   connect(zeroNorm.y, NormLoad.u[1]);
@@ -1522,42 +1513,28 @@ end for;
   connect(zeroLight.y, LightLoad.u[1]);
   connect(zeroInner.y, InnerLoad.u[1]);
 
-  // 8. Solar radiation input connected to fourElements
+  // 6. Solar radiation input connected to fourElements
   connect(solRadIn, fourElements.solRad)
     annotation (Line(points={{0,-110},{0,-92},{-40,-92},{-40,18},{-33.2917,18},{
           -33.2917,20.5}},
                      color={0,0,127}));
 
-
-  // 10. Occupant load Q_flow from constant
-
-  // 11. Appliance load Q_flow from constant
-
-  // 12. Infiltration air temperature from outside temperature signal
+  // 7. Infiltration air temperature from outside temperature signal
   connect(T_infiltration_air.T, ToutSig.y) annotation (Line(points={{76,-8},{76,
           -26},{63,-26}},                 color={0,0,127}));
-
-
-
   connect(senTZone.port, fourElements.intGainsConv) annotation (Line(points={{-84,-10},
           {-34,-10},{-34,-30},{38,-30},{38,7.66667},{30,7.66667}},
                               color={191,0,0}));
-
   connect(T_infiltration_air.port, infiltrationLoss.port_b) annotation (Line(
         points={{98,-8},{100,-8},{100,8},{62,8},{62,3}},             color={191,
           0,0}));
-
-
   connect(QIntRad.port, fourElements.intGainsRad) annotation (Line(points={{-42,26},
           {36,26},{36,12.3333},{30,12.3333}},           color={191,0,0}));
-
   connect(HVAC.port_b, fourElements.intGainsConv) annotation (Line(points={{8,42},{
           34,42},{34,7.66667},{30,7.66667}},                   color={191,0,0}));
 
 
-  // ============================================================================
-  // VARIABLE INTERNAL GAINS CONNECTIONS (28 Dec - CORRECTED)
-  // ============================================================================
+  // 8. VARIABLE INTERNAL GAINS CONNECTIONS (corrected)
   connect(nPersons, occGain_conv.u) annotation (Line(points={{114,62},{111.7,62},
           {111.7,63},{89.4,63}},  color={0,0,127}));
   connect(occGain_conv.y, occLoad.Q_flow) annotation (Line(points={{73.3,63},{
@@ -1572,5 +1549,28 @@ end for;
 
   connect(TZone, TZone)
     annotation (Line(points={{-60,-100},{-60,-100}},
-                                                   color={0,0,127}));
+      color={0,0,127}),
+      Documentation(info="<html>
+<h4>Heated Zone Model - Fundamental Building Bloack of this project</h4>
+<p><b>Single parameterized zobe for each instance</b></p>
+<li>
+Dec 7, 2025, by Karthik Murugesan
+</li>
+<p><b>Added Building HVAC & DIN files</b></p>
+
+<li>
+Nov 20, 2025, by Karthik Murugesan
+</li>
+<p><b>Included thermal mass properties - occupancy & appliance</b></p>
+
+<li>
+Oct 30, 2025, by Karthik Murugesan
+</li>
+<p><b>Added IBPSA's Four Elements model</b></p>
+
+<li>
+Oct 17, 2025, by Karthik Murugesan
+</li>
+<p><b>Initialized Building parameters from CoSES ProHMo</b></p>
+</html>"));
 end HeatedZone;

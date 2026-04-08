@@ -42,7 +42,7 @@ record School "School building"
     nPersons_cellar_default=25,
     nPersons_roof_default=30,
 
-    // ⭐ NEW: Thermal Resistances for School
+    // Added: Thermal Resistances for School
     // Schools need good insulation for energy efficiency and comfort
     Rwall=3.030,         // Good wall insulation (U≈0.33 W/(m²·K) for 1 m²)
     RExtRem=0.135,       // Remaining exterior resistance
@@ -64,7 +64,10 @@ record School "School building"
 <li>High ceilings for ventilation and comfort</li>
 </ul>
 
-<p><b>⭐ NEW: Thermal Properties</b></p>
+<li>
+Dec 7, 2025, by Karthik Murugesan
+</li>
+<p><b>Thermal Properties</b></p>
 <p>Educational-grade insulation levels:</p>
 <ul>
 <li><b>Walls:</b> R = 3.030 K/W (U ≈ 0.33 W/(m²·K)) - Good insulation</li>
@@ -73,6 +76,9 @@ record School "School building"
 <li><b>Remaining resistances:</b> 0.135 K/W - Good thermal mass</li>
 </ul>
 
+<li>
+Oct 30, 2025, by Karthik Murugesan
+</li>
 <p><b>Energy Performance:</b></p>
 <p>This school has good insulation suitable for:</p>
 <ul>

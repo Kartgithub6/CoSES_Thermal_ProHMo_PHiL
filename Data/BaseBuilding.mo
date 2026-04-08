@@ -73,7 +73,10 @@ record BaseBuilding "Base record for building parameters"
 <p>This record contains all building parameters for the three-zone building model.</p>
 <p>This record is used as a template for specific building types.</p>
 
-<p><b>⭐ NEW: Thermal Resistance Parameters</b></p>
+<li>
+Dec 7, 2025, by Karthik Murugesan
+</li>
+<p><b>Thermal Resistance Parameters</b></p>
 <p>Added thermal resistance parameters for the FourElements RC model:</p>
 <ul>
 <li><b>Wall Resistances:</b>
@@ -96,6 +99,9 @@ record BaseBuilding "Base record for building parameters"
 </li>
 </ul>
 
+<li>
+Oct 30, 2025, by Karthik Murugesan
+</li>
 <p><b>Thermal Resistance Guidelines:</b></p>
 <ul>
 <li>Higher R-values indicate better insulation</li>

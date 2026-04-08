@@ -42,7 +42,7 @@ record Office "Office building"
     nPersons_cellar_default=0,
     nPersons_roof_default=10,
 
-    // ⭐ NEW: Thermal Resistances for Office Building
+    // Added: Thermal Resistances for Office Building
     // Commercial buildings typically have code-compliant insulation
     Rwall=2.500,         // Commercial wall insulation (U≈0.40 W/(m²·K) for 1 m²)
     RExtRem=0.125,       // Remaining exterior resistance
@@ -64,7 +64,10 @@ record Office "Office building"
 <li>Increased ceiling height for commercial use</li>
 </ul>
 
-<p><b>⭐ NEW: Thermal Properties</b></p>
+<li>
+Dec 7, 2025, by Karthik Murugesan
+</li>
+<p><b>Thermal Properties</b></p>
 <p>Commercial-grade insulation levels:</p>
 <ul>
 <li><b>Walls:</b> R = 2.500 K/W (U ≈ 0.40 W/(m²·K)) - Commercial standard</li>
@@ -73,6 +76,9 @@ record Office "Office building"
 <li><b>Remaining resistances:</b> 0.125 K/W - Standard commercial thermal mass</li>
 </ul>
 
+<li>
+Oct 30, 2025, by Karthik Murugesan
+</li>
 <p><b>Energy Performance:</b></p>
 <p>This office building has commercial-grade insulation suitable for:</p>
 <ul>

@@ -105,27 +105,12 @@ record EnvironmentConditions
         Text(
           extent={{-100,120},{100,160}},
           textString="%name",
-          textColor={0,0,255})}
-        // Background rectangle (sky blue)
-
-        // Sun circle
-
-        // Sun rays (8 directions)
-
-        // Cloud (3 overlapping circles)
-
-        // Thermometer (temperature)
-
-        // Thermometer markings
-
-        // Wind arrows (showing air movement)
-
-        // Ground line (brown)
-
-        // Small grass indicators
-
-        // Label at top
-
-        // Component name
-));
+          textColor={0,0,255})}),
+    Documentation(info="<html>
+<h4>Environment Conditions</h4>
+<li>
+Sep 20, 2025, by Karthik Murugesan
+</li>
+<p><b>Added new Environment Conditions under Interfaces</b></p>
+</html>"));
 end EnvironmentConditions;

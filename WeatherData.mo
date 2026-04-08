@@ -20,10 +20,17 @@ package WeatherData
     parameter Real rhoAir = 1.2   "Air density [kg/m3]";
     parameter Real cpAir  = 1005  "Air specific heat [J/kg.K]";
     parameter Real RadiationVector[3];
-    parameter Real RadiationDirect "Direct solar radiation [W/m2]"; // removed value 0
-    parameter Real RadiationDiffuse "Diffuse solar radiation [W/m2]"; // removed value 0
+    parameter Real RadiationDirect "Direct solar radiation [W/m2]";
+    parameter Real RadiationDiffuse "Diffuse solar radiation [W/m2]";
 
     annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
-          coordinateSystem(preserveAspectRatio=false)));
+          coordinateSystem(preserveAspectRatio=false)),
+      Documentation(info="<html>
+<h4>Weather Data</h4>
+<p><b>Parameters with Environmental Conditions</b></p>
+<li>
+Oct 25, 2025, by Karthik Murugesan
+</li>
+</html>"));
   end EnvironmentConditions;
 end WeatherData;

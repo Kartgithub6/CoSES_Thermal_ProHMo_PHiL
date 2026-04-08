@@ -4,58 +4,64 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   replaceable package Medium = Modelica.Media.Water.StandardWater;
 
-  // ═══════════════════════════════════════════════════════════════════
-  // 🏠 BUILDING TYPE PARAMETER
-  // ═══════════════════════════════════════════════════════════════════
-  replaceable parameter CoSES_Thermal_ProHMo_PHiL.Data.SmallHouse
-                                                                buildingData
+  // ============================================================================
+  // BUILDING TYPE PARAMETERS
+  // ============================================================================
+  replaceable parameter CoSES_Thermal_ProHMo_PHiL.Data.SmallHouse buildingData
     constrainedby CoSES_Thermal_ProHMo_PHiL.Data.BaseBuilding
     "Building type - SELECT from available building types"
-    annotation(
+    annotation (
       choicesAllMatching=true,
       Dialog(group="Building Configuration", tab="General"));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // 🌤️ WEATHER CONFIGURATION WITH DROPDOWN
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // WEATHER CONFIGURATION WITH DROPDOWN
+  // ============================================================================
   parameter String weatherDataFile =
-    "D:/Desktop/MSC-PE/Thesis/THESIS ENS/modelica-ibpsa-master/IBPSA/Resources/weatherdata/DEU_Munich.108660_IWEC.mos"
+    "E:/Documents/Dymola/Library/IBPSA/Resources/weatherdata/DEU_Munich.108660_IWEC.mos"
     "Path to TMY3 weather data file"
     annotation(Dialog(
       group="Weather Data",
       tab="General"),
       choices(
-        choice="D:/Desktop/MSC-PE/Thesis/THESIS ENS/modelica-ibpsa-master/IBPSA/Resources/weatherdata/DEU_Munich.108660_IWEC.mos"
+        choice="E:/Documents/Dymola/Library/IBPSA/Resources/weatherdata/DEU_Munich.108660_IWEC.mos"
           "Munich, Germany",
-        choice="D:/Desktop/MSC-PE/Thesis/THESIS ENS/modelica-ibpsa-master/IBPSA/Resources/weatherdata/USA_CA_San.Francisco.Intl.AP.724940_TMY3.mos"
+        choice="E:/Documents/Dymola/Library/IBPSA/Resources/weatherdata/FRA_Paris.Orly.071490_IWEC.mos"
+          "Paris, France",
+        choice="E:/Documents/Dymola/Library/IBPSA/Resources/weatherdata/GBR_London.Gatwick.037760_IWEC.mos"
+          "London Gatwick, United Kingdom",
+        choice="E:/Documents/Dymola/Library/IBPSA/Resources/weatherdata/weatherdata/DEU_Berlin.103840_IWEC.mos"
+          "Berlin, Germany",
+        choice="E:/Documents/Dymola/Library/IBPSA/Resources/weatherdata/USA_CA_San.Francisco.Intl.AP.724940_TMY3.mos"
           "San Francisco, USA",
-        choice="D:/Desktop/MSC-PE/Thesis/THESIS ENS/modelica-ibpsa-master/IBPSA/Resources/weatherdata/USA_CO_Denver.Intl.AP.725650_TMY3.mos"
+        choice="E:/Documents/Dymola/Library/IBPSA/Resources/weatherdata/USA_CO_Denver.Intl.AP.725650_TMY3.mos"
           "Denver, USA",
-        choice="D:/Desktop/MSC-PE/Thesis/THESIS ENS/modelica-ibpsa-master/IBPSA/Resources/weatherdata/USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.mos"
+        choice="E:/Documents/Dymola/Library/IBPSA/Resources/weatherdata/USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.mos"
           "Chicago, USA"));
 
   parameter Boolean useWeatherFile = false
     "If true, use weather file; if false, use T_ambient_fixed"
     annotation(Dialog(group="Weather Data", tab="General"));
 
-  parameter Modelica.Units.SI.Temperature T_ambient_fixed=271.15
+  parameter Modelica.Units.SI.Temperature T_ambient_fixed = 271.15
     "Fixed ambient temperature [K] (used when useWeatherFile=false)"
     annotation(Dialog(group="Weather Data", tab="General", enable=not useWeatherFile));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // 🌡️ ZONE INITIAL TEMPERATURES - FOR COLD START TESTING
-  // ═══════════════════════════════════════════════════════════════════
-  parameter Modelica.Units.SI.Temperature TZoneInit_living = buildingData.TZoneInit_living
+  // ============================================================================
+  // ?Ａ️ ZONE INITIAL TEMPERATURES - FOR COLD START TESTING
+  // ============================================================================
+  parameter Modelica.Units.SI.Temperature TZoneInit_living = 293.15
     "Initial living zone temperature [K] - Default from buildingData, set to 283.15 for cold start (10°C)"
-    annotation(Dialog(group="Initial Conditions", tab="Advanced"));
+    annotation(Dialog(group="Initial Conditions", tab="Advanced")); //buildingData.TZoneInit_living
 
-  parameter Modelica.Units.SI.Temperature TZoneInit_cellar = buildingData.TZoneInit_cellar
+  parameter Modelica.Units.SI.Temperature TZoneInit_cellar = 291.15
     "Initial cellar zone temperature [K] - Default from buildingData, set to 283.15 for cold start (10°C)"
-    annotation(Dialog(group="Initial Conditions", tab="Advanced"));
+    annotation(Dialog(group="Initial Conditions", tab="Advanced")); // buildingData.TZoneInit_cellar
 
-  parameter Modelica.Units.SI.Temperature TZoneInit_roof = buildingData.TZoneInit_roof
+  parameter Modelica.Units.SI.Temperature TZoneInit_roof = 292.15
     "Initial roof zone temperature [K] - Default from buildingData, set to 283.15 for cold start (10°C)"
     annotation(Dialog(group="Initial Conditions", tab="Advanced"));
+
 
   // IBPSA WEATHER COMPONENTS
   IBPSA.BoundaryConditions.WeatherData.Bus weaBus if useWeatherFile
@@ -74,9 +80,9 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
       transformation(extent={{-42,96},{-22,116}}, rotation=0),
       iconTransformation(extent={{-120,80},{-100,100}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // ☀️ IBPSA SOLAR RADIATION COMPONENTS (reference: SimpleRoomFourElements)
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   IBPSA.BoundaryConditions.SolarIrradiation.DirectTiltedSurface HDirTil[2](
     each til=1.5707963267949,
     each lat=0.87266462599716,
@@ -133,7 +139,9 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
       visible=true,
       transformation(extent={{82,148},{92,158}}, rotation=0)));
 
-  // ── Per-zone solar radiation mapping ──
+  // ============================================================================
+  // Per-zone solar radiation mapping
+  // ============================================================================
   // Living zone: average of 2 orientations (corGDouPan output)
   Modelica.Blocks.Math.Add solRadLivingSum if useWeatherFile
     "Sum of solar radiation from both orientations for living zone"
@@ -169,8 +177,8 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
       transformation(extent={{176,120},{196,140}}, rotation=0)));
 
   inner Modelica.Fluid.System system(
-    energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyStateInitial,
-    massDynamics=Modelica.Fluid.Types.Dynamics.SteadyStateInitial,
+    energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial,
+    massDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial,
     T_ambient=T_ambient_fixed)
     "System-wide properties"
     annotation(Placement(
@@ -178,12 +186,13 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
       transformation(origin={-218,160}, extent={{-10,-10},{10,10}}, rotation=0),
       iconTransformation(origin={-90,90}, extent={{-5,-5},{5,5}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // 📥 PHiL INPUTS
-  // ═══════════════════════════════════════════════════════════════════
+
+  // ============================================================================
+  // PHiL INPUTS
+  // ============================================================================
   Modelica.Blocks.Interfaces.RealInput STM_HCVLaM_degC(start=60)
     "Supply temperature from hardware [°C]"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={-280,112}, extent={{-20,-20},{20,20}}, rotation=0),
@@ -191,7 +200,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealInput SFW_HCRLbM_l_per_min(start=6)
     "Supply flow rate from hardware [L/min] (dummy for PHiL)"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={-280,70}, extent={{-20,-20},{20,20}}, rotation=0),
@@ -199,7 +208,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealInput T_ambient_degC(start=5)
     "Ambient temperature [°C] (reference only)"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={-280,30}, extent={{-20,-20},{20,20}}, rotation=0),
@@ -207,7 +216,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealInput nPersons_living_in(start=buildingData.nPersons_living_default)
     "Number of people in living room"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={-280,-20}, extent={{-20,-20},{20,20}}, rotation=0),
@@ -215,7 +224,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealInput nPersons_cellar_in(start=buildingData.nPersons_cellar_default)
     "Number of people in cellar"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={-280,-60}, extent={{-20,-20},{20,20}}, rotation=0),
@@ -223,7 +232,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealInput nPersons_roof_in(start=buildingData.nPersons_roof_default)
     "Number of people in roof office"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={-280,-100}, extent={{-20,-20},{20,20}}, rotation=0),
@@ -231,7 +240,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealInput P_appliances_living_W_in(start=buildingData.P_appliances_living_default)
     "Appliance power in living room [W]"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={270,-130}, extent={{-20,-20},{20,20}}, rotation=180),
@@ -239,7 +248,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealInput P_appliances_cellar_W_in(start=buildingData.P_appliances_cellar_default)
     "Appliance power in cellar [W]"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={270,-160}, extent={{-20,-20},{20,20}}, rotation=180),
@@ -247,18 +256,18 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealInput P_appliances_roof_W_in(start=buildingData.P_appliances_roof_default)
     "Appliance power in roof office [W]"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={270,-190}, extent={{-20,-20},{20,20}}, rotation=180),
         iconTransformation(origin={110,-90}, extent={{-10,-10},{10,10}}, rotation=180)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // 📤 PHiL OUTPUTS
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // PHiL OUTPUTS
+  // ============================================================================
   Modelica.Blocks.Interfaces.RealOutput T_roomIs_degC
     "Living room temperature [°C]"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={270,114}, extent={{-10,-10},{10,10}}, rotation=0),
@@ -266,7 +275,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealOutput T_cellarIs_degC
     "Cellar temperature [°C]"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={270,82}, extent={{-10,-10},{10,10}}, rotation=0),
@@ -274,7 +283,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealOutput T_roofIs_degC
     "Roof office temperature [°C]"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={270,50}, extent={{-10,-10},{10,10}}, rotation=0),
@@ -282,7 +291,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealOutput STM_HCRL_Set_degC
     "Return temperature setpoint [°C]"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={270,20}, extent={{-10,-10},{10,10}}, rotation=0),
@@ -290,7 +299,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealOutput SFW_HCRLbM_Set_l_per_min
     "Calculated flow rate setpoint [L/min]"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={270,-10}, extent={{-10,-10},{10,10}}, rotation=0),
@@ -298,7 +307,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealOutput valve_cellar_opening
     "Cellar valve position [0-1]"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={270,-40}, extent={{-10,-10},{10,10}}, rotation=0),
@@ -306,7 +315,7 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealOutput valve_living_opening
     "Living valve position [0-1]"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={270,-70}, extent={{-10,-10},{10,10}}, rotation=0),
@@ -314,15 +323,15 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 
   Modelica.Blocks.Interfaces.RealOutput valve_roof_opening
     "Roof valve position [0-1]"
-    annotation(
+    annotation (
       Placement(
         visible=true,
         transformation(origin={270,-100}, extent={{-10,-10},{10,10}}, rotation=0),
         iconTransformation(origin={110,-50}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // 🔧 FLUID BOUNDARIES
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // FLUID BOUNDARIES
+  // ============================================================================
   Modelica.Fluid.Sources.Boundary_pT supply(
     redeclare package Medium = Medium,
     use_p_in=false,
@@ -355,9 +364,9 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
       transformation(origin={-100,-50}, extent={{10,-10},{-10,10}}, rotation=0),
       iconTransformation(origin={-60,-60}, extent={{-5,-5},{5,5}}, rotation=180)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // 🏢 BUILDING MODEL
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // BUILDING MODEL
+  // ============================================================================
   CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis.ThreeZoneBuilding_optimized building(
     redeclare package Medium = Medium,
     AZone_cellar=buildingData.AZone_cellar,
@@ -385,9 +394,9 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
       transformation(extent={{-56,-110},{64,90}},rotation=0),
       iconTransformation(extent={{-40,-40},{40,40}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
-  // 🔄 UNIT CONVERSIONS
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // UNIT CONVERSIONS
+  // ============================================================================
   Modelica.Blocks.Sources.RealExpression toKelvin(y=STM_HCVLaM_degC + 273.15)
     "Convert supply temp from °C to K"
     annotation(Placement(
@@ -433,16 +442,16 @@ model ThreeZoneBuilding_PHiL_optimized_withWeather
 equation
   // Weather connection
   if useWeatherFile then
-    connect(weaDat.weaBus, weaBus) annotation(
+    connect(weaDat.weaBus, weaBus) annotation (
       Line(
         points={{-22,106},{30,106}},
         color={255,204,51},
         thickness=0.5));
   end if;
 
-  // ═══════════════════════════════════════════════════════════════════
-  // ☀️ SOLAR RADIATION CHAIN CONNECTIONS (reference: SimpleRoomFourElements)
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
+  // SOLAR RADIATION CHAIN CONNECTIONS (reference: SimpleRoomFourElements)
+  // ============================================================================
   if useWeatherFile then
     // Weather bus → Solar irradiation components
     connect(weaDat.weaBus, HDirTil[1].weaBus)
@@ -522,11 +531,11 @@ equation
     // Living zone: average of 2 orientations
     connect(corGDouPan.solarRadWinTrans[1], solRadLivingSum.u1)
       annotation(Line(
-        points={{75,150},{82,150},{82,178},{100,178}},
+        points={{75,149.75},{82,149.75},{82,178},{100,178}},
         color={0,0,127}));
     connect(corGDouPan.solarRadWinTrans[2], solRadLivingSum.u2)
       annotation(Line(
-        points={{75,150},{86,150},{86,166},{100,166}},
+        points={{75,150.25},{86,150.25},{86,166},{100,166}},
         color={0,0,127}));
     connect(solRadLivingSum.y, solRadLivingAvg.u)
       annotation(Line(
@@ -536,15 +545,15 @@ equation
     // Solar radiation → building zone inputs
     connect(solRadLivingAvg.y, building.solRad_living[1])
       annotation(Line(
-        points={{155,172},{168,172},{168,86},{-68,86},{-68,-60},{-56,-60}},
+        points={{155,172},{168,172},{168,86},{-68,86},{-68,-60},{-62,-60}},
         color={0,0,127}));
     connect(solRadRoofZero.y, building.solRad_roof)
       annotation(Line(
-        points={{155,200},{172,200},{172,82},{-72,82},{-72,-30},{-56,-30}},
+        points={{155,200},{172,200},{172,82},{-72,82},{-72,-30},{-62,-30}},
         color={0,0,127}));
     connect(solRadCellarZero.y, building.solRad_cellar)
       annotation(Line(
-        points={{197,130},{202,130},{202,78},{-76,78},{-76,-90},{-56,-90}},
+        points={{197,130},{202,130},{202,78},{-76,78},{-76,-90},{-62,-90}},
         color={0,0,127}));
   end if;
 
@@ -552,15 +561,15 @@ equation
   if not useWeatherFile then
     connect(solRadLivingZero.y, building.solRad_living)
       annotation(Line(
-        points={{155,172},{168,172},{168,86},{-68,86},{-68,-60},{-56,-60}},
+        points={{155,172},{168,172},{168,86},{-68,86},{-68,-60},{-62,-60}},
         color={0,0,127}));
     connect(solRadRoofZero.y, building.solRad_roof)
       annotation(Line(
-        points={{155,200},{172,200},{172,82},{-72,82},{-72,-30},{-56,-30}},
+        points={{155,200},{172,200},{172,82},{-72,82},{-72,-30},{-62,-30}},
         color={0,0,127}));
     connect(solRadCellarZero.y, building.solRad_cellar)
       annotation(Line(
-        points={{197,130},{202,130},{202,78},{-76,78},{-76,-90},{-56,-90}},
+        points={{197,130},{202,130},{202,78},{-76,78},{-76,-90},{-62,-90}},
         color={0,0,127}));
   end if;
 
@@ -568,149 +577,149 @@ equation
   connect(supply.ports[1], building.port_a) annotation (Line(points={{-150,64},{
     -76,64},{-76,50},{-56,50}}, color={0,127,255}, thickness=0.5, smooth=Smooth.Bezier));
 
-  connect(building.port_b, TReturn.port_a) annotation(
+  connect(building.port_b, TReturn.port_a) annotation (
     Line(
       points={{-56,-70},{-84,-70},{-84,-50},{-90,-50}},
       color={0,127,255},
       thickness=0.5,
       smooth=Smooth.Bezier));
 
-  connect(TReturn.port_b, return_sink.ports[1]) annotation(
+  connect(TReturn.port_b, return_sink.ports[1]) annotation (
     Line(
       points={{-110,-50},{-170,-50}},
       color={0,127,255},
       thickness=0.5,
       smooth=Smooth.Bezier));
 
-  connect(toKelvin.y, supply.T_in) annotation(
+  connect(toKelvin.y, supply.T_in) annotation (
     Line(
       points={{-178,64},{-172,64},{-172,68}},
       color={0,0,127},
       smooth=Smooth.Bezier));
 
   // Temperature outputs
-  connect(building.TZone_living, toCelsius_living.u1) annotation(
+  connect(building.TZone_living, toCelsius_living.u1) annotation (
     Line(
       points={{70,20},{84,20},{84,120},{218,120}},
       color={0,0,127}));
 
-  connect(kelvinOffset.y, toCelsius_living.u2) annotation(
+  connect(kelvinOffset.y, toCelsius_living.u2) annotation (
     Line(
       points={{201,10},{210,10},{210,108},{218,108}},
       color={0,0,127}));
 
-  connect(toCelsius_living.y, T_roomIs_degC) annotation(
+  connect(toCelsius_living.y, T_roomIs_degC) annotation (
     Line(
       points={{241,114},{270,114}},
       color={0,0,127}));
 
-  connect(building.TZone_cellar, toCelsius_cellar.u1) annotation(
+  connect(building.TZone_cellar, toCelsius_cellar.u1) annotation (
     Line(
       points={{70,50},{208,50},{208,88},{218,88}},
       color={0,0,127}));
 
-  connect(kelvinOffset.y, toCelsius_cellar.u2) annotation(
+  connect(kelvinOffset.y, toCelsius_cellar.u2) annotation (
     Line(
       points={{201,10},{210,10},{210,76},{218,76}},
       color={0,0,127}));
 
-  connect(toCelsius_cellar.y, T_cellarIs_degC) annotation(
+  connect(toCelsius_cellar.y, T_cellarIs_degC) annotation (
     Line(
       points={{241,82},{270,82}},
       color={0,0,127}));
 
-  connect(building.TZone_roof, toCelsius_roof.u1) annotation(
+  connect(building.TZone_roof, toCelsius_roof.u1) annotation (
     Line(
       points={{70,-10},{174,-10},{174,56},{218,56}},
       color={0,0,127}));
 
-  connect(kelvinOffset.y, toCelsius_roof.u2) annotation(
+  connect(kelvinOffset.y, toCelsius_roof.u2) annotation (
     Line(
       points={{201,10},{210,10},{210,44},{218,44}},
       color={0,0,127}));
 
-  connect(toCelsius_roof.y, T_roofIs_degC) annotation(
+  connect(toCelsius_roof.y, T_roofIs_degC) annotation (
     Line(
       points={{241,50},{270,50}},
       color={0,0,127}));
 
-  connect(TReturn.T, toCelsius_return.u1) annotation(
+  connect(TReturn.T, toCelsius_return.u1) annotation (
     Line(
       points={{-100,-39},{-100,-32},{206,-32},{206,26},{218,26}},
       color={0,0,127}));
 
-  connect(kelvinOffset.y, toCelsius_return.u2) annotation(
+  connect(kelvinOffset.y, toCelsius_return.u2) annotation (
     Line(
       points={{201,10},{210,10},{210,14},{218,14}},
       color={0,0,127}));
 
-  connect(toCelsius_return.y, STM_HCRL_Set_degC) annotation(
+  connect(toCelsius_return.y, STM_HCRL_Set_degC) annotation (
     Line(
       points={{241,20},{270,20}},
       color={0,0,127}));
 
   // Flow rate output - FIXED CONVERSION!
-  connect(building.qvRef, flowConvertOut.u) annotation(
+  connect(building.qvRef, flowConvertOut.u) annotation (
     Line(
       points={{70,-80},{208,-80},{208,-10},{218,-10}},
       color={0,0,127}));
 
-  connect(flowConvertOut.y, SFW_HCRLbM_Set_l_per_min) annotation(
+  connect(flowConvertOut.y, SFW_HCRLbM_Set_l_per_min) annotation (
     Line(
       points={{241,-10},{270,-10}},
       color={0,0,127}));
 
   // Valve outputs
-  connect(building.valve_cellar_opening, valve_cellar_opening) annotation(
+  connect(building.valve_cellar_opening, valve_cellar_opening) annotation (
     Line(
       points={{70,-40},{270,-40}},
       color={0,0,127}));
 
-  connect(building.valve_living_opening, valve_living_opening) annotation(
+  connect(building.valve_living_opening, valve_living_opening) annotation (
     Line(
       points={{70,-60},{254,-60},{254,-70},{270,-70}},
       color={0,0,127}));
 
-  connect(building.valve_roof_opening, valve_roof_opening) annotation(
+  connect(building.valve_roof_opening, valve_roof_opening) annotation (
     Line(
       points={{70,-100},{270,-100}},
       color={0,0,127}));
 
   // Occupancy inputs
-  connect(nPersons_living_in, building.nPersons_living) annotation(
+  connect(nPersons_living_in, building.nPersons_living) annotation (
     Line(
       points={{-280,-20},{-78,-20},{-78,40},{-62,40}},
       color={0,0,127}));
 
-  connect(nPersons_cellar_in, building.nPersons_cellar) annotation(
+  connect(nPersons_cellar_in, building.nPersons_cellar) annotation (
     Line(
       points={{-280,-60},{-252,-60},{-252,82},{-76,82},{-76,70},{-62,70}},
       color={0,0,127}));
 
-  connect(nPersons_roof_in, building.nPersons_roof) annotation(
+  connect(nPersons_roof_in, building.nPersons_roof) annotation (
     Line(
       points={{-280,-100},{-280,-102},{-188,-102},{-188,10},{-62,10}},
       color={0,0,127}));
 
   // Appliance inputs
-  connect(P_appliances_living_W_in, building.P_appliances_living_W) annotation(
+  connect(P_appliances_living_W_in, building.P_appliances_living_W) annotation (
     Line(
       points={{270,-130},{244,-130},{244,-38},{176,-38},{176,-6},{88,-6},{88,40},
           {70,40}},
       color={0,0,127}));
 
-  connect(P_appliances_cellar_W_in, building.P_appliances_cellar_W) annotation(
+  connect(P_appliances_cellar_W_in, building.P_appliances_cellar_W) annotation (
     Line(
       points={{270,-160},{270,-40},{254,-40},{254,-34},{206,-34},{206,70},{70,70}},
       color={0,0,127}));
 
-  connect(P_appliances_roof_W_in, building.P_appliances_roof_W) annotation(
+  connect(P_appliances_roof_W_in, building.P_appliances_roof_W) annotation (
     Line(
       points={{270,-190},{270,-160},{84,-160},{84,10},{70,10}},
       color={0,0,127}));
 
 
-annotation(
+annotation (
     Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
       graphics={
         Rectangle(
@@ -797,33 +806,22 @@ annotation(
           extent={{-75,-60},{75,-75}},
           textString="60000× Flow",
           textColor={0,127,0},
-          fontSize=8)}
-        // White background
-
-        // Main building rectangle
-
-        // Building roof (triangle)
-
-        // Weather indicator - small cloud in corner
-
-        // PHiL connectors (left side - inputs)
-
-        // PHiL connectors (right side - outputs)
-
-        // Text labels - well spaced, no overlap
-
-        // Dynamic building type display
-
-        // Weather indicator text
-
-        // Flow conversion indicator
-),
-
+          fontSize=8)}),
     Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-280,-200},{280,220}})),
-
     Documentation(info="<html>
 <h4>PHiL Wrapper with Weather Integration</h4>
-<p><b>✅ CRITICAL FIX: Flow Conversion Factor</b></p>
+<li>
+Mar 25, 2026, by Karthik Murugesan
+</li>
+<p>Added 3 more weather files to the dropdown</p>
+<ul>
+<li>Berlin, Germany</li>
+<li>Paris, France</li>
+<li>Lomdon Gatwick, United Kingdom</li>
+</ul>
+<li>
+Feb 28, 2026, by Karthik Murugesan
+</li>
 <p>flowConvertOut gain = 60000 (converts m³/s to L/min)</p>
 <p><b>✅ Weather File Dropdown</b></p>
 <p>Select from 4 pre-configured weather files:</p>
@@ -833,13 +831,15 @@ annotation(
 <li>Denver, USA</li>
 <li>Chicago, USA</li>
 </ul>
+<li>
+Jan 20, 2026, by Karthik Murugesan
+</li>
 <p><b>✅ Full Annotations</b></p>
 <p>All connections have proper routing and colors</p>
 <p><b>✅ Building Type Dropdown</b></p>
-<p>Select: SmallHouse, BigHouse, Office, Hospital, School</p>
+<p>Select: SmallHouse, BigHouse, Office, Hospital, School, Factory and Custom configurations!</p>
 <p><b>✅ TZoneInit Parameters Exposed</b></p>
 <p>Override initial temperatures for cold start testing</p>
-<p><b>FOR FMU EXPORT: Use this model!</b></p>
+<p><b>Note: Use this modelfor FMU Export to NI VeriStand 2018!</b></p>
 </html>"));
-
 end ThreeZoneBuilding_PHiL_optimized_withWeather;

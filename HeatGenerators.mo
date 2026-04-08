@@ -4,21 +4,19 @@ package HeatGenerators
     "Simplified CHP (Combined Heat and Power) model for Dymola - based on SimulationX physics"
 
     // ============================================================================
-    // DESCRIPTION
+    // CHP Test File
     // ============================================================================
     // This is a simplified CHP model that:
-    // - Produces both heat (QHeat) and electricity (PElectrical)
-    // - Has modulating power output (30-100%)
-    // - Calculates supply temperature based on heat added to water flow
-    // - Includes thermal dynamics (first-order response)
-    //
+    // 1. Produces both heat (QHeat) and electricity (PElectrical)
+    // 2. Has modulating power output (30-100%)
+    // 3. Calculates supply temperature based on heat added to water flow
+    // 4. Includes thermal dynamics (first-order response)
     // Based on SimulationX GreenCity CHP model physics
     // ============================================================================
 
     // ============================================================================
     // PARAMETERS - CHP Specifications
     // ============================================================================
-
     parameter Modelica.Units.SI.Power QHeat_nominal = 12500
       "Nominal thermal power output [W] (e.g., 12.5 kW)"
       annotation(Dialog(group="Power Rating"));
@@ -235,9 +233,11 @@ package HeatGenerators
             textString="%name")}),
       Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-120,-120},{120,120}})),
       Documentation(info="<html>
-<h4>SimpleCHP - Combined Heat and Power Unit</h4>
+<h4>SimpleCHP - Combined Heat and Power Unit (Test)</h4>
 <p>Simplified CHP model based on SimulationX GreenCity physics.</p>
-
+<li>
+Dec 30, 2025, by Karthik Murugesan
+</li>
 <h5>Features:</h5>
 <ul>
 <li>Produces both thermal and electrical power</li>
@@ -256,7 +256,6 @@ package HeatGenerators
 </ul>
 
 <h5>Usage:</h5>
-<p>Connect TReturn_degC from building return, get TSupply_degC to building supply.</p>
 </html>"));
   end SimpleCHP;
 
@@ -264,14 +263,13 @@ package HeatGenerators
     "Simplified Condensing Boiler model for Dymola - based on SimulationX physics"
 
     // ============================================================================
-    // DESCRIPTION
+    // Condensing Boiler Test File
     // ============================================================================
     // This is a simplified condensing boiler model that:
-    // - Produces heat only (no electricity)
-    // - Has modulating power output (20-100%)
-    // - Higher efficiency at lower return temperatures (condensing effect)
-    // - Includes thermal mass dynamics
-    //
+    // 1. Produces heat only (no electricity)
+    // 2. Has modulating power output (20-100%)
+    // 3. Higher efficiency at lower return temperatures (condensing effect)
+    // 4. Includes thermal mass dynamics
     // Based on SimulationX GreenCity CondensingBoiler model physics
     // ============================================================================
 
@@ -500,9 +498,11 @@ package HeatGenerators
             fillPattern=FillPattern.Solid)}),
       Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-120,-120},{120,120}})),
       Documentation(info="<html>
-<h4>SimpleCondensingBoiler - Gas Condensing Boiler</h4>
+<h4>SimpleCondensingBoiler - Gas Condensing Boiler (Test Version)</h4>
 <p>Simplified condensing boiler model based on SimulationX GreenCity physics.</p>
-
+<li>
+Dec 30, 2025, by Karthik Murugesan
+</li>
 <h5>Features:</h5>
 <ul>
 <li>Modulating heat output (20-100% of nominal)</li>
@@ -655,6 +655,9 @@ condenses, recovering latent heat and boosting efficiency above 100%
       Documentation(info="<html>
 <h4>SimpleCHP_v2 - Debuggable Version</h4>
 <p>Check these debug outputs:</p>
+<li>
+Jan 4, 206, by Karthik Murugesan
+</li>
 <ul>
 <li><b>debug_m_flow_kg_s</b>: Should be ~0.1 for 6 L/min</li>
 <li><b>debug_ModActual</b>: Should be 0.3-1.0 when ON</li>
@@ -962,6 +965,9 @@ condenses, recovering latent heat and boosting efficiency above 100%
 ),    Documentation(info="<html>
 <h4>SimpleSolarThermal</h4>
 <p>Simplified solar thermal collector model based on EN 12975 efficiency curve.</p>
+<li>
+Jan 6, 206, by Karthik Murugesan
+</li>
 
 <h5>Efficiency Model:</h5>
 <pre>

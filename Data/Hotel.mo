@@ -42,7 +42,7 @@ record Hotel "Hotel building"
     nPersons_cellar_default=10,
     nPersons_roof_default=20,
 
-    // ⭐ NEW: Thermal Resistances for Hotel
+    // Added: Thermal Resistances for Hotel
     // Hotels need good insulation for guest comfort and energy efficiency
     Rwall=3.571,         // Good wall insulation (U≈0.28 W/(m²·K) for 1 m²)
     RExtRem=0.145,       // Remaining exterior resistance
@@ -64,7 +64,10 @@ record Hotel "Hotel building"
 <li>Variable occupancy</li>
 </ul>
 
-<p><b>⭐ Thermal Properties</b></p>
+<li>
+Dec 7, 2025, by Karthik Murugesan
+</li>
+<p><b>Thermal Properties</b></p>
 <p>Hospitality-grade insulation:</p>
 <ul>
 <li><b>Walls:</b> R = 3.571 K/W (U ≈ 0.28 W/(m²·K)) - Good insulation</li>
@@ -72,6 +75,9 @@ record Hotel "Hotel building"
 <li><b>Roof:</b> R = 6.250 K/W (U ≈ 0.16 W/(m²·K)) - Excellent insulation</li>
 </ul>
 
+<li>
+Oct 30, 2025, by Karthik Murugesan
+</li>
 <p><b>Energy Performance:</b></p>
 <ul>
 <li>Guest comfort priority</li>

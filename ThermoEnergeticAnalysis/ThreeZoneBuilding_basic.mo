@@ -1,6 +1,6 @@
 within CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis;
 model ThreeZoneBuilding_basic
-  "Three-zone heated building with hydronic heating system - Dymola version"
+  "Three-zone heated building with hydronic heating system"
 
   // ============================================================================
   // MEDIUM AND SYSTEM
@@ -44,10 +44,11 @@ model ThreeZoneBuilding_basic
   // ============================================================================
   // PARAMETERS
   // ============================================================================
+
   // Building parameters
-  parameter Modelica.Units.SI.Area AZone_cellar = 80 "Cellar floor area [m²]";
-  parameter Modelica.Units.SI.Area AZone_living = 100 "Living zone floor area [m²]";
-  parameter Modelica.Units.SI.Area AZone_roof = 60 "Roof zone floor area [m²]";
+  parameter Modelica.Units.SI.Area AZone_cellar = 80 "Cellar floor area [m2]";
+  parameter Modelica.Units.SI.Area AZone_living = 100 "Living zone floor area [m2]";
+  parameter Modelica.Units.SI.Area AZone_roof = 60 "Roof zone floor area [m2]";
 
   parameter Modelica.Units.SI.Length hZone_cellar = 2.2 "Cellar height [m]";
   parameter Modelica.Units.SI.Length hZone_living = 2.5 "Living zone height [m]";
@@ -580,33 +581,8 @@ equation
           extent={{-180,178},{180,155}},
           textColor={0,0,255},
           textString="%name",
-          textStyle={TextStyle.Bold})}
-        // ====== SKY BACKGROUND ======
-
-        // ====== GROUND ======
-
-        // ====== SUN ======
-
-        // ====== HOUSE MAIN BODY ======
-
-        // ====== ROOF ======
-
-        // ====== CELLAR (below ground) ======
-
-        // ====== LIVING ZONE ======
-
-        // ====== ROOF ZONE (attic) ======
-
-        // ====== DOOR ======
-
-        // ====== WINDOWS ======
-
-        // ====== ATTIC WINDOW ======
-
-        // ====== CHIMNEY ======
-
-        // ====== MODEL NAME ======
-),  Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-200,-180},{200,180}})),
+          textStyle={TextStyle.Bold})}),
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-200,-180},{200,180}})),
     experiment(
       StartTime=0,
       StopTime=172800,
@@ -614,6 +590,9 @@ equation
       Tolerance=1e-06),
     Documentation(info="<html>
 <h4>ThreeZoneBuilding - With Variable Internal Gains</h4>
+<li>
+Feb 28, 2026, by Karthik Murugesan
+</li>
 <p>Three-zone heated building model (Cellar, Living, Roof).</p>
 <h5>Internal Gains (passed via equations, hidden from icon):</h5>
 <ul>

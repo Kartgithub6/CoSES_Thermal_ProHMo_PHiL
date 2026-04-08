@@ -2,11 +2,6 @@ within CoSES_Thermal_ProHMo_PHiL.HydronicSystem;
 model SystemWithZoneAndHydronics_SimpleWater
   "Hydronic loop segment + thermal port for zone connection - SimpleWater version"
 
-  // ============================================================================
-  // CHANGE: Use ConstantPropertyLiquidWater instead of StandardWater
-  // This avoids temperature limit errors (IF97 requires T >= 273.15 K)
-  // ============================================================================
-
   replaceable package Medium = Modelica.Media.Water.ConstantPropertyLiquidWater
     constrainedby Modelica.Media.Interfaces.PartialMedium
     annotation(choicesAllMatching=true);
@@ -30,19 +25,11 @@ model SystemWithZoneAndHydronics_SimpleWater
   // ============================================================================
   // INTERNAL: Water-to-HeatPort adapter (also using simple water)
   // ============================================================================
-
-  // NOTE: This references the SimpleWater version of WaterToHeatPort
-  // Make sure WaterToHeatPort_SimpleWater is in your package, or
-  // change this to use the inline version below.
-
   HeatPorts.WaterToHeatPort_SimpleWater waterToHeatPort_SimpleWater(redeclare
       package Medium = Medium)
     annotation (Placement(transformation(extent={{-28,8},{20,56}})));
+
 equation
-  // Connect fluid ports through the adapter
-
-  // Connect heat port to zone
-
   connect(port_a, waterToHeatPort_SimpleWater.port_a)
     annotation (Line(points={{-88,0},{-88,32},{-25.6,32}}, color={0,127,255}));
   connect(waterToHeatPort_SimpleWater.port_b, port_b)
@@ -64,7 +51,7 @@ annotation(
               textColor={0,128,0})}),
   Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
   Documentation(info="<html>
-<h4>SystemWithZoneAndHydronics_SimpleWater</h4>
+<h4>SystemWithZoneAndHydronics_SimpleWater - Backup/h4>
 <p>Same as SystemWithZoneAndHydronics but uses ConstantPropertyLiquidWater medium.</p>
 <p>This avoids IF97 temperature limit errors that occur when zone temperature
 drops below 273.15 K during solver transients.</p>

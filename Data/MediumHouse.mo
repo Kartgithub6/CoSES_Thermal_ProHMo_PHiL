@@ -42,7 +42,7 @@ record MediumHouse "Medium-sized residential house"
     nPersons_cellar_default=0,
     nPersons_roof_default=0,
 
-    // ⭐ NEW: Thermal Resistances for Medium House
+    // Added: Thermal Resistances for Medium House
     Rwall=3.030,         // Good wall insulation (U≈0.33 W/(m²·K) for 1 m²)
     RExtRem=0.135,       // Remaining exterior resistance
     Rfloor=3.571,        // Good floor insulation (U≈0.28 W/(m²·K) for 1 m²)
@@ -62,7 +62,10 @@ record MediumHouse "Medium-sized residential house"
 <li>Between small and large house sizes</li>
 </ul>
 
-<p><b>⭐ Thermal Properties</b></p>
+<li>
+Dec 7, 2025, by Karthik Murugesan
+</li>
+<p><b>Thermal Properties</b></p>
 <p>Good residential insulation levels:</p>
 <ul>
 <li><b>Walls:</b> R = 3.030 K/W (U ≈ 0.33 W/(m²·K)) - Good insulation</li>
@@ -71,6 +74,9 @@ record MediumHouse "Medium-sized residential house"
 <li><b>Remaining resistances:</b> 0.135 K/W</li>
 </ul>
 
+<li>
+Oct 30, 2025, by Karthik Murugesan
+</li>
 <p><b>Energy Performance:</b></p>
 <ul>
 <li>Suitable for modern family homes</li>

@@ -42,7 +42,7 @@ record Factory "Factory/manufacturing facility"
     nPersons_cellar_default=5,
     nPersons_roof_default=20,
 
-    // ⭐ NEW: Thermal Resistances for Factory
+    // Added: Thermal Resistances for Factory
     // Factories have basic insulation - cost-driven
     Rwall=2.000,         // Basic wall insulation (U≈0.50 W/(m²·K) for 1 m²)
     RExtRem=0.110,       // Remaining exterior resistance
@@ -64,7 +64,10 @@ record Factory "Factory/manufacturing facility"
 <li>Lower temperature requirements</li>
 </ul>
 
-<p><b>⭐ Thermal Properties</b></p>
+<li>
+Dec 7, 2025, by Karthik Murugesan
+</li>
+<p><b>Thermal Properties</b></p>
 <p>Basic industrial insulation:</p>
 <ul>
 <li><b>Walls:</b> R = 2.000 K/W (U ≈ 0.50 W/(m²·K)) - Basic insulation</li>
@@ -72,6 +75,9 @@ record Factory "Factory/manufacturing facility"
 <li><b>Roof:</b> R = 3.571 K/W (U ≈ 0.28 W/(m²·K)) - Moderate insulation</li>
 </ul>
 
+<li>
+Oct 30, 2025, by Karthik Murugesan
+</li>
 <p><b>Energy Performance:</b></p>
 <ul>
 <li>Cost-effective construction</li>

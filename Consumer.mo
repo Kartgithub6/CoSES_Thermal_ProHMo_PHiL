@@ -4,12 +4,12 @@ package Consumer
     "Simplified Domestic Hot Water Demand Model for Dymola"
 
     // ============================================================================
-    // MODEL DESCRIPTION
+    // DHW Test File
     // ============================================================================
     // Simplified DHW demand model based on SimulationX DHW_demand
-    // - Calculates DHW heat demand from volume flow profile
-    // - Q_DHW = qv * rho * cp * (T_set - T_cold)
-    // - Tracks energy consumption and missing energy
+    // 1. Calculates DHW heat demand from volume flow profile
+    // 2. Q_DHW = qv * rho * cp * (T_set - T_cold)
+    // 3. Tracks energy consumption and missing energy
     // ============================================================================
 
     // ============================================================================
@@ -163,17 +163,13 @@ package Consumer
         Text(extent={{-80,-65},{80,-90}}, textColor={0,0,0},
           textString="DHW"),
         Text(extent={{-100,140},{100,110}}, textColor={0,0,255},
-          textString="%name")}
-
-        // Tap/faucet
-
-        // Water drops
-
-        // Sink
-
-),    Documentation(info="<html>
-<h4>SimpleDHW - Domestic Hot Water Demand</h4>
+          textString="%name")}),
+      Documentation(info="<html>
+<h4>SimpleDHW - Domestic Hot Water Demand (Test Version)</h4>
 <p>Simplified DHW model based on SimulationX DHW_demand.</p>
+<li>
+Jan 7, 206, by Karthik Murugesan
+</li>
 
 <h5>Inputs:</h5>
 <ul>

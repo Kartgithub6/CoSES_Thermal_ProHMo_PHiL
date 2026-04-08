@@ -3,9 +3,9 @@ model TestThreeZoneBuilding_optimized
   "Test scenario using PHiL wrapper with opimized topology"
   extends Modelica.Icons.Example;
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // BUILDING MODEL - Using PHiL Wrapper
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   CoSES_Thermal_ProHMo_PHiL.ThermoEnergeticAnalysis.ThreeZoneBuilding_PHiL_optimized building(
     AZone_cellar=80,
     AZone_living=100,
@@ -23,15 +23,15 @@ model TestThreeZoneBuilding_optimized
     roofHeat=true,
     k_PI=0.2,
     Ti_PI=800,
-    yMin_cellar=0.08,      // ⭐ 5% minimum (not 20%!)
+    yMin_cellar=0.08,      // 5% minimum (not 20%!)
     yMin_living=0.05,      // 3% minimum (priority zone)
     yMin_roof=0.10         // 8% minimum
 )   "Building with PHiL interface and prioritized hydraulics"
     annotation(Placement(visible=true, transformation(origin={0,-2},extent={{-60,-60},{60,60}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // OUTPUT VARIABLES - For Easy Plotting
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // Zone temperatures
   Real T_living_degC = building.T_roomIs_degC "Living room temperature [°C]";
   Real T_cellar_degC = building.T_cellarIs_degC "Cellar temperature [°C]";
@@ -56,34 +56,10 @@ model TestThreeZoneBuilding_optimized
   Real error_living = 20.0 - T_living_degC "Living error [K]";
   Real error_cellar = 18.0 - T_cellar_degC "Cellar error [K]";
   Real error_roof = 20.0 - T_roof_degC "Roof error [K]";
-/*
-  Real T_living_degC = building.T_roomIs_degC "Living room temperature [°C]";
-  Real T_cellar_degC = building.T_cellarIs_degC "Cellar temperature [°C]";
-  Real T_roof_degC = building.T_roofIs_degC "Roof office temperature [°C]";
-  Real T_return_degC = building.STM_HCRL_Set_degC "Return water temperature [°C]";
-  Real qv_lpm = building.SFW_HCRLbM_Set_l_per_min "Volume flow rate [L/min]";
-  Real valve_living = ThreeZoneBuilding_PHiL_optimized.valve_living_open "Living zone valve [0-1]";
-  Real valve_cellar = ThreeZoneBuilding_PHiL_optimized.valve_cellar_open "Cellar zone valve [0-1]";
-  Real valve_roof = ThreeZoneBuilding_PHiL_optimized.valve_roof_open "Roof zonevalve [0-1]";
-  Real P_heating_living = ThreeZoneBuilding_PHiL_optimized.P_heating_living_kW "Living zone power [kW]";
-  Real P_heating_cellar = ThreeZoneBuilding_PHiL_optimized.P_heating_cellar_kW "Cellar zone power [kW]";
-  Real P_heating_roof = ThreeZoneBuilding_PHiL_optimized.P_heating_roof_kW "Roof zone power [kW]";
 
-
-//  Real valve_cellar = building.valve_cellar_opening "Cellar valve [0-1]";
-//  Real valve_living = building.valve_living_opening "Living valve [0-1]";
-//  Real valve_roof = building.valve_roof_opening "Roof valve [0-1]";
-  Real error_living = 20.0 - T_living_degC "Living error [K]";
-  Real error_cellar = 18.0 - T_cellar_degC "Cellar error [K]";
-  Real error_roof = 20.0 - T_roof_degC "Roof error [K]";
-//  Real P_heating_living_kW = valve_living * 3.5 "Living power [kW]";
-//  Real P_heating_cellar_kW = valve_cellar * 2.5 "Cellar power [kW]";
-//  Real P_heating_roof_kW = valve_roof * 2.5 "Roof power [kW]";
-  Real P_total_kW = ThreeZoneBuilding_PHiL_optimized.P_heating_total_kW "Total power [kW]";
-*/
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // SUPPLY CONDITIONS - What the boiler/heat source provides
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   Modelica.Blocks.Sources.CombiTimeTable T_supply_degC(
     table=[
       0,65;
@@ -103,9 +79,9 @@ model TestThreeZoneBuilding_optimized
     "Dummy flow rate (not used, building calculates own flow)"
     annotation(Placement(visible=true, transformation(origin={-150,20}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // OUTDOOR CONDITIONS - Daily temperature cycle
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   Modelica.Blocks.Sources.CombiTimeTable T_ambient_degC(
     table=[
       0,-2;
@@ -136,9 +112,9 @@ model TestThreeZoneBuilding_optimized
 )   "Outdoor ambient temperature cycle [°C]"
     annotation(Placement(visible=true, transformation(origin={-150,-20}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // OCCUPANCY SCHEDULES - Realistic daily patterns
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   Modelica.Blocks.Sources.CombiTimeTable occupancy_living(
     table=[
       0,0;
@@ -185,9 +161,9 @@ model TestThreeZoneBuilding_optimized
 )   "Roof office occupancy [persons]"
     annotation(Placement(visible=true, transformation(origin={-150,-120}, extent={{-10,-10},{10,10}}, rotation=0)));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // APPLIANCE LOADS - Realistic residential usage
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   Modelica.Blocks.Sources.CombiTimeTable appliances_living(
     table=[
       0,100;
@@ -200,11 +176,11 @@ model TestThreeZoneBuilding_optimized
       75600,200;
       82800,100;
       86400,100]   // 00:00: Fridge baseline
-                   // 07:00: Breakfast (kettle + toaster) ⭐ Realistic
+                   // 07:00: Breakfast (kettle + toaster) - Realistic
                    // 08:00: Back to baseline
-                   // 12:00: Lunch cooking ⭐ Realistic
+                   // 12:00: Lunch cooking - Realistic
                    // 14:00: Baseline
-                   // 18:00: Dinner cooking ⭐ Realistic (NOT 1500W!)
+                   // 18:00: Dinner cooking - Realistic
                    // 19:00: TV + lights
                    // 21:00: Evening electronics
                    // 23:00: Night (fridge only)
@@ -235,9 +211,9 @@ model TestThreeZoneBuilding_optimized
     annotation(Placement(visible=true, transformation(origin={150,-90}, extent={{10,-10},{-10,10}}, rotation=0)));
 
 equation
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // PHiL INPUT CONNECTIONS - From Environment to Building
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   connect(T_supply_degC.y[1], building.STM_HCVLaM_degC)
     annotation(Line(points={{-139,60},{-100,60},{-100,52},{-66,52}}, color={0,0,127}));
 
@@ -247,9 +223,9 @@ equation
   connect(T_ambient_degC.y[1], building.T_ambient_degC)
     annotation(Line(points={{-139,-20},{-100,-20},{-100,28},{-66,28}}, color={0,0,127}));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // OCCUPANCY INPUT CONNECTIONS
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   connect(occupancy_living.y[1], building.nPersons_living_in)
     annotation(Line(points={{-139,-60},{-120,-60},{-120,10},{-66,10}}, color={0,0,127}));
 
@@ -260,9 +236,9 @@ equation
   connect(occupancy_roof.y[1], building.nPersons_roof_in)
     annotation(Line(points={{-139,-120},{-110,-120},{-110,-14},{-66,-14}}, color={0,0,127}));
 
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   // APPLIANCE LOAD CONNECTIONS
-  // ═══════════════════════════════════════════════════════════════════
+  // ============================================================================
   connect(appliances_living.y[1], building.P_appliances_living_W_in)
     annotation(Line(points={{139,-30},{120,-30},{120,-44},{66,-44}}, color={0,0,127}));
 
@@ -282,9 +258,12 @@ equation
     Documentation(info="<html>
 <h4>TestThreeZoneBuilding_optimized</h4>
 
-<p><b>⭐⭐⭐ PROFESSIONAL TEST SCENARIO with OPTIMIZED TOPOLOGY</b></p>
+<p><b>PROFESSIONAL TEST SCENARIO with OPTIMIZED TOPOLOGY</b></p>
 
 <h5>ARCHITECTURE:</h5>
+<li>
+Dec 10, 2025, by Karthik Murugesan
+</li>
 <pre>
 Test Scenario (this file)
     ↓
@@ -312,14 +291,14 @@ Result: Living always comfortable, cellar naturally limited ✅
 <h6>2. OPTIMIZED VALVE MINIMUMS:</h6>
 <pre>
 Living: 3%  (was 10%) - Priority zone, very low
-Cellar: 5%  (was 20%) - ⭐ 75% REDUCTION! Prevents overheating!
+Cellar: 5%  (was 20%) - 75% REDUCTION! Prevents overheating!
 Roof:   8%  (was 10%) - Moderate
 </pre>
 
 <h6>3. RIGHT-SIZED RADIATORS:</h6>
 <pre>
 Living: 3500W - Priority zone, adequate
-Cellar: 2500W - ⭐ REDUCED from 4000W (was 60% oversized!)
+Cellar: 2500W - REDUCED from 4000W (was 60% oversized!)
 Roof:   2500W - Adequate for office
 </pre>
 

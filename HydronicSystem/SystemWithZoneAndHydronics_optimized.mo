@@ -1,6 +1,6 @@
 within CoSES_Thermal_ProHMo_PHiL.HydronicSystem;
 model SystemWithZoneAndHydronics_optimized
-  "Hydronic loop with EN442-2 radiator - FULLY INITIALIZED"
+  "Hydronic loop with EN442-2 radiator - Final Version"
 
   replaceable package Medium = Modelica.Media.Water.StandardWater
     annotation(choicesAllMatching=true);
@@ -53,7 +53,7 @@ model SystemWithZoneAndHydronics_optimized
     "Number of radiator elements for discretization"
     annotation (Dialog(group="Advanced"));
 
-  // ⭐ NEW: Medium initialization parameters
+  // Added: Medium initialization parameters
   parameter Modelica.Units.SI.Temperature T_start=323.15
     "Start temperature for radiator medium (50°C)"
     annotation (Dialog(group="Initialization"));
@@ -67,7 +67,6 @@ model SystemWithZoneAndHydronics_optimized
   // ============================================================================
 
   // EN442-2 Standard Radiator from IBPSA
-  // ⭐ WITH PROPER INITIALIZATION
   IBPSA.Fluid.HeatExchangers.Radiators.RadiatorEN442_2 radiator(
     redeclare package Medium=Medium,
     Q_flow_nominal=Q_flow_nominal,
@@ -119,10 +118,12 @@ equation
         Text(extent={{-60,80},{60,60}},textString="%name",lineColor={0,0,255})}),
     Diagram(coordinateSystem(preserveAspectRatio=false,extent={{-100,-100},{100,100}})),
     Documentation(info="<html>
-<h4>SystemWithZoneAndHydronics_new_FINAL - PRODUCTION VERSION</h4>
+<h4>SystemWithZoneAndHydronics_optimized - Final Version</h4>
 
 <p>This is the FINAL corrected version with complete initialization to prevent simulation failures.</p>
-
+<li>
+Nov 24, 2025, by Karthik Murugesan
+</li>
 <h5>Fixes Applied:</h5>
 <ul>
 <li><b>energyDynamics = SteadyStateInitial:</b> Prevents over-constrained initialization</li>
@@ -133,8 +134,10 @@ equation
 
 <p>These explicit start values are propagated to all 5 radiator elements, eliminating the
 'using zero start values' warnings during translation.</p>
-
-<h5>Parameters:</h5>
+<li>
+Oct 10, 2025, by Karthik Murugesan
+</li>
+<h5>Added Parameters:</h5>
 <ul>
 <li><b>Q_flow_nominal:</b> Nominal heating power (default 1500W)</li>
 <li><b>T_a_nominal:</b> Inlet temp (default 70°C)</li>
@@ -142,8 +145,8 @@ equation
 <li><b>TAir_nominal:</b> Room temp (default 20°C)</li>
 <li><b>fraRad:</b> Radiative fraction (default 0.35)</li>
 <li><b>nEle:</b> Elements (default 5)</li>
-<li><b>T_start:</b> Initial temperature (default 50°C) ⭐ NEW</li>
-<li><b>p_start:</b> Initial pressure (default 2 bar) ⭐ NEW</li>
+<li><b>T_start:</b> Initial temperature (default 50°C)</li>
+<li><b>p_start:</b> Initial pressure (default 2 bar)</li>
 </ul>
 </html>"));
 end SystemWithZoneAndHydronics_optimized;

@@ -136,7 +136,7 @@ model TestThreeZoneBuilding_PHiL_TimeVarying
     extrapolation=Modelica.Blocks.Types.Extrapolation.Periodic,
     smoothness=Modelica.Blocks.Types.Smoothness.ConstantSegments)
     "Living: high morning/evening, low during day"
-    annotation (Placement(transformation(extent={{-202,-90},{-182,-70}})));
+    annotation (Placement(transformation(extent={{-198,-90},{-178,-70}})));
 
   Modelica.Blocks.Sources.CombiTimeTable P_app_cellar_schedule(
     table=[
@@ -239,11 +239,11 @@ equation
   // APPLIANCE CONNECTIONS
   // ============================================================================
   connect(P_app_living_schedule.y[1], building.P_appliances_living_W_in)
-    annotation (Line(points={{-181,-80},{-120,-80},{-120,0},{40,0}},      color={255,128,0}));
+    annotation (Line(points={{-177,-80},{88,-80},{88,0},{40,0}},          color={255,128,0}));
   connect(P_app_cellar_schedule.y[1], building.P_appliances_cellar_W_in)
-    annotation (Line(points={{-179,-108},{-110,-108},{-110,-12},{40,-12}},  color={255,128,0}));
+    annotation (Line(points={{-179,-108},{76,-108},{76,-12},{40,-12}},      color={255,128,0}));
   connect(P_app_roof_schedule.y[1], building.P_appliances_roof_W_in)
-    annotation (Line(points={{-179,-138},{-100,-138},{-100,12},{40,12}},    color={255,128,0}));
+    annotation (Line(points={{-179,-138},{96,-138},{96,12},{40,12}},        color={255,128,0}));
 
   annotation (
     experiment(
@@ -492,48 +492,14 @@ equation
         Text(
           extent={{-180,-170},{180,-195}},
           textColor={0,0,128},
-          textString="Variable Internal Gains")}
-        // ====== SKY BACKGROUND ======
-
-        // ====== GROUND ======
-
-        // ====== SUN ======
-
-        // ====== HOUSE MAIN BODY ======
-
-        // ====== ROOF ======
-
-        // ====== CELLAR (below ground) ======
-
-        // ====== LIVING ZONE ======
-
-        // ====== ROOF ZONE (attic) ======
-
-        // ====== DOOR ======
-
-        // ====== WINDOWS ======
-
-        // ====== ATTIC WINDOW ======
-
-        // ====== CHIMNEY ======
-
-        // ====== HOT WATER PIPE (Input) ======
-
-        // ====== COLD WATER PIPE (Output) ======
-
-        // ====== TEMPERATURE OUTPUT ARROWS ======
-
-        // ====== PERSON ICONS ======
-
-        // ====== APPLIANCE ICON (TV) ======
-
-        // ====== INPUT/OUTPUT LABELS ======
-
-        // ====== TITLE ======
-),  Documentation(info="<html>
+          textString="Variable Internal Gains")}),
+    Documentation(info="<html>
 <h4>Time-Varying Internal Gains Test Model</h4>
 
 <h5>Daily Schedule Summary:</h5>
+<li>
+Dec 10, 2025, by Karthik Murugesan
+</li>
 <table border=\"1\">
 <tr><th>Time</th><th>Living</th><th>Cellar</th><th>Roof</th></tr>
 <tr><td>00:00-06:00</td><td>2 pers + 30W</td><td>0 pers + 80W</td><td>0 pers + 20W</td></tr>

@@ -1,7 +1,7 @@
 within CoSES_Thermal_ProHMo_PHiL;
 package Scenarios
   model SF1_Dymola
-    "SF1: Solar Thermal + CHP + CB + Building + DHW - Complete System"
+    "SF1: Solar Thermal + CHP + CB + Building + DHW - Complete System (SimX to Dymola Version)"
 
     // ============================================================================
     // SYSTEM PARAMETERS
@@ -418,25 +418,8 @@ package Scenarios
           Line(points={{-100,130},{180,130},{180,40}}, color={128,128,128}, thickness=0.25, pattern=LinePattern.Dot),
           Line(points={{-160,70},{-80,70},{-80,140},{200,140},{200,40}}, color={128,128,128}, thickness=0.25, pattern=LinePattern.Dot),
           Ellipse(extent={{120,-20},{140,0}}, lineColor={238,46,47}, fillColor={255,200,200}, fillPattern=FillPattern.Solid),
-          Text(extent={{122,-5},{138,-15}}, textString="Buffer", textColor={238,46,47}, textStyle={TextStyle.Bold})}
-          // Background rectangles for component groups
-
-          // CONNECTION LINES - CHP to Hysteresis to Building
-
-          // CONNECTION LINES - CB to Hysteresis to Building
-
-          // CONNECTION LINES - ST to Hysteresis to Buffer
-
-          // CONNECTION LINES - Buffer to Building
-
-          // CONNECTION LINES - DHW
-
-          // CONNECTION LINES - Weather to components
-
-          // CONNECTION LINES - Occupancy to Building
-
-          // Buffer Storage symbol
-),    Icon(graphics={
+          Text(extent={{122,-5},{138,-15}}, textString="Buffer", textColor={238,46,47}, textStyle={TextStyle.Bold})}),
+      Icon(graphics={
         Rectangle(extent={{-100,100},{100,-100}}, lineColor={0,0,0},
           fillColor={255,255,255}, fillPattern=FillPattern.Solid),
         Rectangle(extent={{-80,80},{-20,40}}, lineColor={255,128,0}, fillColor={255,200,100}, fillPattern=FillPattern.Solid),
@@ -454,11 +437,21 @@ package Scenarios
         Line(points={{-20,10},{20,20}}, color={0,0,255}, thickness=1),
         Line(points={{-20,-40},{0,-40},{0,-60},{20,-60}}, color={0,140,72}, thickness=1),
         Text(extent={{-90,95},{90,85}}, textColor={0,0,255}, textString="SF1"),
-        Text(extent={{-90,-85},{90,-95}}, textString="ST+CHP+CB+Building+DHW")}));
+        Text(extent={{-90,-85},{90,-95}}, textString="ST+CHP+CB+Building+DHW")}),
+      Documentation(info="<html>
+<h4>SF1_Dymola - Complete Component-Based Model</h4>
+<p>Single-Family House configuration (no solar thermal):</p>
+<li>
+Jan 10, 2026, by Karthik Murugesan
+</li>
+
+<p><b>Added components for testing heating system in HeatedZone</b></p>
+</html>"));
+
   end SF1_Dymola;
 
   model MF5_Dymola
-    "MF5: CHP + CB + Building + DHW - Complete Component-Based Model (No Solar)"
+    "MF5: CHP + CB + Building + DHW - Complete Component-Based Model (No Solar - SimX to Dymola)"
 
     // ============================================================================
     // MODEL DESCRIPTION
@@ -934,6 +927,9 @@ package Scenarios
       Documentation(info="<html>
 <h4>MF5_Dymola - Complete Component-Based Model</h4>
 <p>Multi-Family House configuration (no solar thermal):</p>
+<li>
+Jan 10, 2026, by Karthik Murugesan
+</li>
 <ul>
 <li><b>ThreeZoneBuilding_PHiL</b> - 240 m² building</li>
 <li><b>SimpleCHP_v2</b> - Primary (5kW el / 12.5kW th)</li>

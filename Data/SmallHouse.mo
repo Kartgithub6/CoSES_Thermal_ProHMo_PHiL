@@ -42,7 +42,7 @@ record SmallHouse "Small residential house"
     nPersons_cellar_default=0,
     nPersons_roof_default=0,
 
-    // ⭐ NEW: Thermal Resistances for Small House
+    // Added: Thermal Resistances for Small House
     // Small houses typically have standard insulation
     Rwall=2.857,         // Standard wall insulation (U≈0.35 W/(m²·K) for 1 m²)
     RExtRem=0.130,       // Remaining exterior resistance
@@ -62,7 +62,10 @@ record SmallHouse "Small residential house"
 <li>Typical 2-person household</li>
 </ul>
 
-<p><b>⭐ NEW: Thermal Properties</b></p>
+<li>
+Dec 7, 2025, by Karthik Murugesan
+</li>
+<p><b>Thermal Properties</b></p>
 <p>Standard residential insulation levels:</p>
 <ul>
 <li><b>Walls:</b> R = 2.857 K/W (U ≈ 0.35 W/(m²·K)) - Standard insulation</li>
@@ -71,6 +74,9 @@ record SmallHouse "Small residential house"
 <li><b>Remaining resistances:</b> 0.130 K/W - Additional thermal mass effects</li>
 </ul>
 
+<li>
+Oct 30, 2025, by Karthik Murugesan
+</li>
 <p><b>Energy Performance:</b></p>
 <p>This small house has standard insulation suitable for:</p>
 <ul>

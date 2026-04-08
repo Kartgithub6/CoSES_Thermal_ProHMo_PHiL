@@ -60,6 +60,15 @@ package Control
     connect(limitFlow.y, qvRef) annotation (Line(points={{99,-2},{120,-2},
             {120,2},{138,2}}, color={0,0,127}));
     annotation (Icon(coordinateSystem(preserveAspectRatio=false)),
-        Diagram(coordinateSystem(preserveAspectRatio=false)));
+      Diagram(coordinateSystem(preserveAspectRatio=false)),
+      Documentation(info="<html>
+<h4>Volume Flow Control</h4>
+<p><b>Test File for Controller</b></p>
+<li>
+Oct 17, 2025, by Karthik Murugesan
+</li>
+<p><b>Added components for testing heating system in HeatedZone</b></p>
+</html>"));
+
   end volumeFlowControlHeatingSystem;
 end Control;

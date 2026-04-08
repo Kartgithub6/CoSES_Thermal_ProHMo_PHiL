@@ -2,11 +2,6 @@ within CoSES_Thermal_ProHMo_PHiL.HeatPorts;
 model WaterToHeatPort_SimpleWater
   "Non-intrusive adapter between hydronic loop and HeatPort - SimpleWater version"
 
-  // ============================================================================
-  // CHANGE: Use ConstantPropertyLiquidWater instead of StandardWater
-  // This avoids temperature limit errors (IF97 requires T >= 273.15 K)
-  // ============================================================================
-
   replaceable package Medium = Modelica.Media.Water.ConstantPropertyLiquidWater
     constrainedby Modelica.Media.Interfaces.PartialMedium
     annotation(choicesAllMatching = true);
@@ -45,7 +40,6 @@ equation
     m_flow * (inStream(port_a.h_outflow) - inStream(port_b.h_outflow));
 
   // Water enthalpy at zone temperature
-  // NOTE: With ConstantPropertyLiquidWater, this works at any temperature
   h_zone =
     Medium.specificEnthalpy(
       Medium.setState_pT(port_a.p, heatPort.T));
@@ -72,7 +66,7 @@ annotation(
            textColor={0,128,0})}),
   Diagram(coordinateSystem(extent={{-100,-100},{100,100}})),
   Documentation(info="<html>
-<h4>WaterToHeatPort_SimpleWater</h4>
+<h4>WaterToHeatPort_SimpleWater - Back up</h4>
 <p>Same as WaterToHeatPort but uses ConstantPropertyLiquidWater medium.</p>
 <p>This avoids IF97 temperature limit errors that occur when zone temperature
 drops below 273.15 K during transients.</p>

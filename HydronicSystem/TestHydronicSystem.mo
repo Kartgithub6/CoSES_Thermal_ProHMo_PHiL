@@ -34,8 +34,6 @@ model TestHydronicSystem
     annotation (Placement(transformation(extent={{-10,60},{10,80}})));
 
 equation
-
-
   connect(hotSource.ports[1], sysUT.port_a)
     annotation (Line(points={{-80,0},{-9,0}}, color={0,127,255}));
   connect(sysUT.port_b, coldSink.ports[1])

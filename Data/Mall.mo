@@ -42,7 +42,7 @@ record Mall "Shopping mall/retail center"
     nPersons_cellar_default=10,
     nPersons_roof_default=80,
 
-    // ⭐ NEW: Thermal Resistances for Mall
+    // Added: Thermal Resistances for Mall
     // Malls have moderate insulation balanced with high internal gains
     Rwall=2.500,         // Commercial wall insulation (U≈0.40 W/(m²·K) for 1 m²)
     RExtRem=0.120,       // Remaining exterior resistance
@@ -52,7 +52,7 @@ record Mall "Shopping mall/retail center"
     RRoofRem=0.120);     // Remaining roof resistance
 
   annotation(Documentation(info="<html>
-<p><b>Shopping Mall/Retail Center - NEW</b></p>
+<p><b>Shopping Mall/Retail Center</b></p>
 
 <p><b>Building Characteristics:</b></p>
 <ul>
@@ -64,7 +64,10 @@ record Mall "Shopping mall/retail center"
 <li>High internal heat gains from lighting and people</li>
 </ul>
 
-<p><b>⭐ Thermal Properties</b></p>
+<li>
+Dec 7, 2025, by Karthik Murugesan
+</li>
+<p><b>Thermal Properties</b></p>
 <p>Commercial retail insulation:</p>
 <ul>
 <li><b>Walls:</b> R = 2.500 K/W (U ≈ 0.40 W/(m²·K)) - Commercial standard</li>
@@ -72,6 +75,9 @@ record Mall "Shopping mall/retail center"
 <li><b>Roof:</b> R = 4.545 K/W (U ≈ 0.22 W/(m²·K)) - Good commercial</li>
 </ul>
 
+<li>
+Oct 30, 2025, by Karthik Murugesan
+</li>
 <p><b>Energy Performance:</b></p>
 <ul>
 <li>Balance insulation with high internal gains</li>

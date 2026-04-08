@@ -42,7 +42,7 @@ record Hospital "Hospital ward"
     nPersons_cellar_default=0,
     nPersons_roof_default=15,
 
-    // ⭐ NEW: Thermal Resistances for Hospital
+    // Added: Thermal Resistances for Hospital
     // Hospitals need excellent insulation for energy efficiency and comfort
     Rwall=4.000,         // Excellent wall insulation (U≈0.25 W/(m²·K) for 1 m²)
     RExtRem=0.150,       // Higher remaining resistance for better thermal stability
@@ -65,7 +65,10 @@ record Hospital "Hospital ward"
 <li>24/7 operation</li>
 </ul>
 
-<p><b>⭐ NEW: Thermal Properties</b></p>
+<li>
+Dec 7, 2025, by Karthik Murugesan
+</li>
+<p><b>Thermal Properties</b></p>
 <p>Superior insulation levels for healthcare:</p>
 <ul>
 <li><b>Walls:</b> R = 4.000 K/W (U ≈ 0.25 W/(m²·K)) - Excellent insulation</li>
@@ -74,6 +77,9 @@ record Hospital "Hospital ward"
 <li><b>Remaining resistances:</b> 0.150 K/W - Enhanced thermal mass for stability</li>
 </ul>
 
+<li>
+Oct 30, 2025, by Karthik Murugesan
+</li>
 <p><b>Energy Performance:</b></p>
 <p>This hospital has superior insulation suitable for:</p>
 <ul>
