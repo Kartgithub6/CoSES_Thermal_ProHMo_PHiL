@@ -1,6 +1,6 @@
-# CoSES_Thermal_ProHMo_PHiL
+# Thermo-Energetic Analysis of Multi-Zone Buildings using Digital Twin Power Hardware-in-the-Loop Environments
 
-**Thermo-Energetic Analysis of Multi-Zone Buildings using Digital Twin Power Hardware-in-the-Loop Environments**
+**CoSES_Thermal_ProHMo_PHiL**
 
 Master's Thesis — Karthik Murugesan  
 Chair of Renewable and Sustainable Energy Systems, Technical University of Munich  
